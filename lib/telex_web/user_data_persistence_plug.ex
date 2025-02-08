@@ -9,6 +9,7 @@ defmodule Telex.UserDataPersistencePlug do
     repo = opts[:repo] || raise("repo is required")
     schema = opts[:schema] || raise("schema is required")
     changeset = Keyword.get(opts, :changeset, :changeset)
+    user_assigns_key = Keyword.get(opts, :user_assigns_key, :current_user)
     # ... in the future also: field mapping, etc.
 
     user_data = conn.assigns.telegram_user_data
@@ -23,16 +24,18 @@ defmodule Telex.UserDataPersistencePlug do
       telegram_is_premium: !!user_data["is_premium"]
     }
 
-    case repo.get_by(schema, telegram_id: user_data["id"]) do
-      nil ->
-        apply(schema, changeset, [struct(schema), user_attrs])
-        |> repo.insert!()
+    user =
+      case repo.get_by(schema, telegram_id: user_data["id"]) do
+        nil ->
+          apply(schema, changeset, [struct(schema), user_attrs])
+          |> repo.insert!()
 
-      user ->
-        apply(schema, changeset, [user, user_attrs])
-        |> repo.update!()
-    end
+        user ->
+          apply(schema, changeset, [user, user_attrs])
+          |> repo.update!()
+      end
 
     conn
+    |> Plug.Conn.assign(user_assigns_key, user)
   end
 end
