@@ -1,4 +1,4 @@
-defmodule Telex.ActorPlug do
+defmodule Telex.UserDataPlug do
   @moduledoc """
   Extract user data from [update params](https://core.telegram.org/bots/api#update).
   """
