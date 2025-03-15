@@ -1,4 +1,4 @@
-# Telex
+# Gramex
 
 Very basic and feature-incomplete Telegram bot API helpers.
 

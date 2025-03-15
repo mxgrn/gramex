@@ -1,4 +1,4 @@
-defmodule Telex.Api do
+defmodule Gramex.Api do
   @moduledoc """
   A lot of code relies on this API being predictible and consistent.
   """
@@ -24,7 +24,7 @@ defmodule Telex.Api do
 
       # bot blocked
       {:ok, %{:body => %{"ok" => false, "description" => description, "error_code" => 403}}} ->
-        msg = "Telex got back error_code: 403, description: #{description}"
+        msg = "Gramex got back error_code: 403, description: #{description}"
         Logger.warning(msg)
 
         # or maybe return error_code instead? this depends on whether we pass it to the user or keep it to ourselves
@@ -32,16 +32,17 @@ defmodule Telex.Api do
 
       # for example, telegram_id doesn't exist (any more)
       {:ok, %{:body => %{"ok" => false, "description" => description, "error_code" => 400}}} ->
-        msg = "Telex got back error_code: 400, description: #{description}"
+        msg = "Gramex got back error_code: 400, description: #{description}"
         Logger.warning(msg)
 
         # or maybe return error_code instead? this depends on whether we pass it to the user or keep it to ourselves
         {:invalid_request, description}
 
       # other errors
-      {:ok, %{:body => %{"ok" => false, "description" => description, "error_code" => error_code}}} ->
+      {:ok,
+       %{:body => %{"ok" => false, "description" => description, "error_code" => error_code}}} ->
         msg =
-          "Telex got back error_code: #{error_code}, description: #{description}"
+          "Gramex got back error_code: #{error_code}, description: #{description}"
 
         Logger.warning(msg)
 
@@ -49,7 +50,7 @@ defmodule Telex.Api do
         {:error, description}
 
       e ->
-        msg = "Telex: #{inspect(e)}"
+        msg = "Gramex: #{inspect(e)}"
         Logger.warning(msg)
         {:error, msg}
     end

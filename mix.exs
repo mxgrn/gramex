@@ -1,12 +1,12 @@
-defmodule Telex.MixProject do
+defmodule Gramex.MixProject do
   use Mix.Project
 
   @version "0.0.1"
-  @source_url "https://github.com/mxgrn/telex"
+  @source_url "https://github.com/mxgrn/gramex"
 
   def project do
     [
-      app: :telex,
+      app: :gramex,
       version: @version,
       elixir: "~> 1.18",
       package: package(),
@@ -28,7 +28,7 @@ defmodule Telex.MixProject do
     [
       {:plug, "~> 1.0"},
       {:req, "~> 0.5"},
-      {:ex_doc, ">= 0.0.0", only: :dev},
+      {:ex_doc, ">= 0.0.0", only: :dev}
     ]
   end
 

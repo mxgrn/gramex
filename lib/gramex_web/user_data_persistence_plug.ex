@@ -1,15 +1,15 @@
-defmodule Telex.UserDataPersistencePlug do
+defmodule Gramex.UserDataPersistencePlug do
   @moduledoc """
   Keeps user data in the database up-to-date.
 
   Usage example:
 
   ```elixir
-      defmodule Telex.UserDataPersistencePlug do
+      defmodule Gramex.UserDataPersistencePlug do
         use Plug.Builder
 
-        plug Telex.UserDataPlug
-        plug Telex.UserDataPersistencePlug, repo: MyApp.Repo, schema: MyApp.User, changeset: MyApp.User.changeset()
+        plug Gramex.UserDataPlug
+        plug Gramex.UserDataPersistencePlug, repo: MyApp.Repo, schema: MyApp.User, changeset: MyApp.User.changeset()
       end
   ```
   """
