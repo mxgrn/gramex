@@ -1,13 +1,18 @@
 defmodule Telex.MixProject do
   use Mix.Project
 
+  @version "0.0.1"
+  @source_url "https://github.com/mxgrn/telex"
+
   def project do
     [
       app: :telex,
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.18",
+      package: package(),
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      docs: docs()
     ]
   end
 
@@ -21,7 +26,30 @@ defmodule Telex.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:plug, "~> 1.0"}
+      {:plug, "~> 1.0"},
+      {:req, "~> 0.5"},
+      {:ex_doc, ">= 0.0.0", only: :dev},
+    ]
+  end
+
+  defp package do
+    [
+      description: "Very basic and feature-incomplete Telegram bot API helpers",
+      licenses: ["MIT"],
+      links: %{
+        "GitHub" => @source_url
+      }
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      source_ref: "v#{@version}",
+      source_url: @source_url,
+      extras: [
+        "README.md"
+      ]
     ]
   end
 end
