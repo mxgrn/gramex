@@ -40,15 +40,16 @@ defmodule Gramex.UserDataPersistencePlug do
     }
 
     user =
-      case repo.get_by(schema, telegram_id: user_data["id"]) do
-        nil ->
-          apply(schema, changeset, [struct(schema), user_attrs])
-          |> repo.insert!()
+      user_data["id"] &&
+        case repo.get_by(schema, telegram_id: user_data["id"]) do
+          nil ->
+            apply(schema, changeset, [struct(schema), user_attrs])
+            |> repo.insert!()
 
-        user ->
-          apply(schema, changeset, [user, user_attrs])
-          |> repo.update!()
-      end
+          user ->
+            apply(schema, changeset, [user, user_attrs])
+            |> repo.update!()
+        end
 
     conn
     |> Plug.Conn.assign(user_assigns_key, user)
