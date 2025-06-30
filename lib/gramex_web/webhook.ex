@@ -17,4 +17,11 @@ defmodule GramexWeb.Webhook do
   def extract_user_data(%{"chat_member" => %{"from" => user}}), do: user
   def extract_user_data(%{"chat_join_request" => %{"from" => user}}), do: user
   def extract_user_data(_), do: nil
+
+  @doc """
+  Extracts the message text from the update params.
+  """
+  def extract_message(%{"message" => %{"text" => text}}), do: text
+  def extract_message(%{"edited_message" => %{"text" => text}}), do: text
+  def extract_message(_), do: nil
 end

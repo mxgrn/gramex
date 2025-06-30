@@ -29,15 +29,23 @@ defmodule Gramex.UserDataPersistencePlug do
 
     user_data = conn.assigns.telegram_user_data
 
-    user_attrs = %{
-      telegram_id: user_data["id"],
-      telegram_username: user_data["username"],
-      telegram_is_bot: user_data["is_bot"],
-      telegram_first_name: user_data["first_name"],
-      telegram_last_name: user_data["last_name"],
-      telegram_language_code: user_data["language_code"],
-      telegram_is_premium: !!user_data["is_premium"]
-    }
+    user_attrs =
+      %{
+        telegram_id: user_data["id"],
+        telegram_username: user_data["username"],
+        telegram_is_bot: user_data["is_bot"],
+        telegram_first_name: user_data["first_name"],
+        telegram_last_name: user_data["last_name"],
+        telegram_language_code: user_data["language_code"],
+        telegram_is_premium: !!user_data["is_premium"]
+      }
+      |> then(fn user_attrs ->
+        if last_message = user_data["last_message"] do
+          Map.put(user_attrs, :telegram_last_message, last_message)
+        else
+          user_attrs
+        end
+      end)
 
     user =
       user_data["id"] &&
