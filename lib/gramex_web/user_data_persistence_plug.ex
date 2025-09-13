@@ -5,12 +5,8 @@ defmodule Gramex.UserDataPersistencePlug do
   Usage example:
 
   ```elixir
-      defmodule Gramex.UserDataPersistencePlug do
-        use Plug.Builder
-
-        plug Gramex.UserDataPlug
-        plug Gramex.UserDataPersistencePlug, repo: MyApp.Repo, schema: MyApp.User, changeset: MyApp.User.changeset()
-      end
+  plug Gramex.UserDataPlug
+  plug Gramex.UserDataPersistencePlug, repo: MyApp.Repo, schema: MyApp.User, changeset: :changeset
   ```
   """
 
