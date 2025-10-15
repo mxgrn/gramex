@@ -23,6 +23,14 @@ defmodule Gramex.ApiMock do
     {:ok, response}
   end
 
+  def request(_token, "setWebhook", _params) do
+    response =
+      true
+      |> normalize_response()
+
+    {:ok, response}
+  end
+
   def request(_token, "sendChatAction" = method, %{chat_id: chat_id} = params) do
     update_id = :rand.uniform(1_000_000)
 
