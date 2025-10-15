@@ -35,6 +35,7 @@ defmodule Gramex.MixProject do
 
       # because we need Phoenix.ConnTest, although at some point Plug.Conn might suffice
       {:phoenix, "~> 1.0"},
+      {:nimble_options, "~> 1.0"},
       {:quokka, "~> 2.6", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev},
       {:mimic, "~> 1.12", only: :test}

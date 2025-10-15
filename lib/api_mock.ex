@@ -1,15 +1,16 @@
 defmodule Gramex.ApiMock do
   alias Gramex.ApiMock.Message
-  alias Gramex.Testing.BotCase.Registry
-  alias Gramex.Testing.BotCase.Update
+  alias Gramex.Testing.Sessions.Registry
+  alias Gramex.Testing.Sessions.Update
 
-  def request(_token, "sendMessage" = method, %{chat_id: chat_id} = params) do
+  def request(_token, method, %{chat_id: chat_id} = params)
+      when method in ["sendMessage", "sendPhoto"] do
     # TODO: make these incremental
     update_id = :rand.uniform(1_000_000)
     message_id = :rand.uniform(1_000_000)
 
     response =
-      %Message{message_id: message_id}
+      %Message{message_id: message_id, text: params[:text]}
       |> normalize_response()
 
     Registry.append_to_session(chat_id, %Update{

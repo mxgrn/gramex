@@ -1,14 +1,11 @@
 defmodule Gramex.Testing.BotCase do
   use ExUnit.CaseTemplate
 
-  alias __MODULE__.Registry
+  alias Gramex.Testing.Sessions.Registry
 
   using do
     quote do
-      import Ecto
-      import Ecto.Changeset
-      import Ecto.Query
-      import Gramex.Testing.Session
+      import Gramex.Testing.BotCase.SessionHelpers
     end
   end
 
