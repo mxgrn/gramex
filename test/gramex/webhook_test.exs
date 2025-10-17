@@ -4,7 +4,7 @@ defmodule Gramex.WebhookTest do
   alias Gramex.Webhook
 
   describe "extract_user_data/1" do
-    test "works for channel post" do
+    test "doesn't crash for channel post" do
       update = %{
         channel_post: %{
           audio: %{
@@ -16,20 +16,20 @@ defmodule Gramex.WebhookTest do
             mime_type: "audio/mpeg"
           },
           author_signature: "[Filtered]",
-          caption: "Γειά σου, πώς είσαι;",
+          caption: "Some caption",
           chat: %{
             id: -1_003_191_355_926,
-            title: "「я υⳅⲩɥⲁю ⲅⲣⲉɥⲉⲥⲕυύ」",
+            title: "Я изучаю греческий",
             type: "channel",
-            username: "greekfairy"
+            username: "someusername"
           },
           date: 1_759_840_345,
           message_id: 9,
           sender_chat: %{
             id: -1_003_191_355_926,
-            title: "「я υⳅⲩɥⲁю ⲅⲣⲉɥⲉⲥⲕυύ」",
+            title: "Я изучаю греческий",
             type: "channel",
-            username: "greekfairy"
+            username: "someusername"
           }
         },
         update_id: 420_823_383
