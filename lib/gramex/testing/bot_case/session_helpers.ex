@@ -53,6 +53,27 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
     call_method(session, "sendMessage", opts |> Keyword.put(:text, text))
   end
 
+  def assert_has_button(session, text) do
+    find_update_with_button(session.updates, text)
+    |> case do
+      nil ->
+        raise "No button with text #{text} found"
+
+      # TODO: this should look into response instead of params, but we're not building it properly yet
+      %{params: %{reply_markup: %{inline_keyboard: buttons}}} ->
+        buttons
+        |> List.flatten()
+        |> Enum.find(fn %{text: button_text} -> button_text =~ text end)
+        |> case do
+          nil ->
+            raise "No button with text #{text} found"
+
+          _ ->
+            session
+        end
+    end
+  end
+
   def click_button(%{user: user} = session, text) do
     find_update_with_button(session.updates, text)
     |> case do

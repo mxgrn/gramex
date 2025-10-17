@@ -23,6 +23,52 @@ defmodule Gramex.Testing.SessionTest do
     end
   end
 
+  describe "assert_has_button/2" do
+    test "passes when button exists" do
+      user = User.new(id: @chat_id)
+
+      session = start_session(user)
+
+      Api.request(nil, "sendMessage", %{
+        chat_id: @chat_id,
+        text: "Welcome to the bot! How are you today?",
+        reply_markup: %{
+          inline_keyboard: [
+            [%{callback_data: "feedback", text: "Good!"}],
+            [%{callback_data: "feedback", text: "So-so"}]
+          ]
+        }
+      })
+
+      session
+      |> reload_session()
+      |> assert_has_button("Good")
+      |> assert_has_button("So-so")
+    end
+
+    test "raises when button does not exist" do
+      user = User.new(id: @chat_id)
+
+      session = start_session(user)
+
+      Api.request(nil, "sendMessage", %{
+        chat_id: @chat_id,
+        text: "Welcome to the bot! How are you today?",
+        reply_markup: %{
+          inline_keyboard: [
+            [%{callback_data: "feedback", text: "Good!"}]
+          ]
+        }
+      })
+
+      assert_raise RuntimeError, "No button with text Bad found", fn ->
+        session
+        |> reload_session()
+        |> assert_has_button("Bad")
+      end
+    end
+  end
+
   describe "click_button/2" do
     test "works" do
       user = User.new(id: @chat_id)
