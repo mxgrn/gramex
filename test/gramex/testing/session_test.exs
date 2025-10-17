@@ -23,6 +23,73 @@ defmodule Gramex.Testing.SessionTest do
     end
   end
 
+  describe "assert_text_matches/2" do
+    test "passes when text contains string" do
+      user = User.new(id: @chat_id)
+
+      session = start_session(user)
+
+      Api.request(nil, "sendMessage", %{
+        chat_id: @chat_id,
+        text: "Welcome to the bot! How are you today?"
+      })
+
+      session
+      |> reload_session()
+      |> assert_text_matches("Welcome")
+      |> assert_text_matches("How are you")
+    end
+
+    test "passes when text matches regex" do
+      user = User.new(id: @chat_id)
+
+      session = start_session(user)
+
+      Api.request(nil, "sendMessage", %{
+        chat_id: @chat_id,
+        text: "Your code is: 12345"
+      })
+
+      session
+      |> reload_session()
+      |> assert_text_matches(~r/code is: \d+/)
+    end
+
+    test "raises when text does not contain string" do
+      user = User.new(id: @chat_id)
+
+      session = start_session(user)
+
+      Api.request(nil, "sendMessage", %{
+        chat_id: @chat_id,
+        text: "Welcome to the bot!"
+      })
+
+      assert_raise RuntimeError, ~r/Expected message text to contain 'Goodbye'/, fn ->
+        session
+        |> reload_session()
+        |> assert_text_matches("Goodbye")
+      end
+    end
+
+    test "raises when text does not match regex" do
+      user = User.new(id: @chat_id)
+
+      session = start_session(user)
+
+      Api.request(nil, "sendMessage", %{
+        chat_id: @chat_id,
+        text: "Hello world"
+      })
+
+      assert_raise RuntimeError, ~r/Expected message text to match/, fn ->
+        session
+        |> reload_session()
+        |> assert_text_matches(~r/^\d+$/)
+      end
+    end
+  end
+
   describe "assert_has_button/2" do
     test "passes when button exists" do
       user = User.new(id: @chat_id)

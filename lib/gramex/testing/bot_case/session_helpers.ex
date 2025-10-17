@@ -53,6 +53,32 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
     call_method(session, "sendMessage", opts |> Keyword.put(:text, text))
   end
 
+  def assert_text_matches(session, pattern) do
+    case List.last(session.updates) do
+      nil ->
+        raise "No messages in session"
+
+      # TODO: this should look into response instead of params, but we're not building it properly yet
+      %{params: %{text: text}} ->
+        cond do
+          is_binary(pattern) and String.contains?(text, pattern) ->
+            session
+
+          is_struct(pattern, Regex) and Regex.match?(pattern, text) ->
+            session
+
+          is_binary(pattern) ->
+            raise "Expected message text to contain '#{pattern}', but got: '#{text}'"
+
+          true ->
+            raise "Expected message text to match #{inspect(pattern)}, but got: '#{text}'"
+        end
+
+      update ->
+        raise "Last update does not contain text: #{inspect(update)}"
+    end
+  end
+
   def assert_has_button(session, text) do
     find_update_with_button(session.updates, text)
     |> case do
