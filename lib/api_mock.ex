@@ -4,11 +4,12 @@ defmodule Gramex.ApiMock do
   alias Gramex.Testing.Sessions.Update
 
   def request(_token, method, %{chat_id: chat_id} = params)
-      when method in ["sendMessage", "sendPhoto"] do
+      when method in ["sendMessage", "sendPhoto", "sendVoice"] do
     # TODO: make these incremental
     update_id = :rand.uniform(1_000_000)
     message_id = :rand.uniform(1_000_000)
 
+    # veeery simplified, see https://core.telegram.org/bots/api#message
     response =
       %Message{message_id: message_id, text: params[:text]}
       |> normalize_response()

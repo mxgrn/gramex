@@ -23,7 +23,7 @@ defmodule Gramex.Testing.SessionTest do
     end
   end
 
-  describe "assert_text_matches/2" do
+  describe "assert_has_text/2" do
     test "passes when text contains string" do
       user = User.new(id: @chat_id)
 
@@ -36,8 +36,8 @@ defmodule Gramex.Testing.SessionTest do
 
       session
       |> reload_session()
-      |> assert_text_matches("Welcome")
-      |> assert_text_matches("How are you")
+      |> assert_has_text("Welcome")
+      |> assert_has_text("How are you")
     end
 
     test "passes when text matches regex" do
@@ -52,7 +52,7 @@ defmodule Gramex.Testing.SessionTest do
 
       session
       |> reload_session()
-      |> assert_text_matches(~r/code is: \d+/)
+      |> assert_has_text(~r/code is: \d+/)
     end
 
     test "raises when text does not contain string" do
@@ -68,7 +68,7 @@ defmodule Gramex.Testing.SessionTest do
       assert_raise RuntimeError, ~r/Expected message text to contain 'Goodbye'/, fn ->
         session
         |> reload_session()
-        |> assert_text_matches("Goodbye")
+        |> assert_has_text("Goodbye")
       end
     end
 
@@ -85,7 +85,7 @@ defmodule Gramex.Testing.SessionTest do
       assert_raise RuntimeError, ~r/Expected message text to match/, fn ->
         session
         |> reload_session()
-        |> assert_text_matches(~r/^\d+$/)
+        |> assert_has_text(~r/^\d+$/)
       end
     end
   end
@@ -128,7 +128,7 @@ defmodule Gramex.Testing.SessionTest do
         }
       })
 
-      assert_raise RuntimeError, "No button with text Bad found", fn ->
+      assert_raise RuntimeError, ~r/No button with text Bad found/, fn ->
         session
         |> reload_session()
         |> assert_has_button("Bad")
@@ -170,6 +170,43 @@ defmodule Gramex.Testing.SessionTest do
       session
       |> reload_session()
       |> click_button("Good")
+    end
+
+    test "raises an exception if there's no button" do
+      user = User.new(id: @chat_id)
+
+      session = start_session(user)
+
+      Api.request(nil, "sendMessage", %{
+        chat_id: @chat_id,
+        text: "Welcome to the bot! How are you today?",
+        reply_markup: %{
+          inline_keyboard: [
+            [%{callback_data: "feedback", text: "Good!"}],
+            [%{callback_data: "feedback", text: "So-so"}]
+          ]
+        }
+      })
+
+      expect(Webhook, :post_update, fn _path, update ->
+        assert %{
+                 "callback_query" => %{
+                   "data" => "feedback",
+                   "message" => %{
+                     "message_id" => _,
+                     "from" => %{"id" => @chat_id}
+                   }
+                 }
+               } = update
+
+        %{}
+      end)
+
+      assert_raise RuntimeError, ~r/No button with text Bad found/, fn ->
+        session
+        |> reload_session()
+        |> click_button("Bad")
+      end
     end
   end
 end

@@ -5,11 +5,10 @@ Telegram bot helpers for Elixir applications using Plug or Phoenix. Gramex wraps
 > ℹ️ Gramex is under active development. The public API is still evolving, but it is already useful for real Telegram bot projects.
 
 ## Features
-- **Adapter-based API client** – `Gramex.Api` delegates requests to a configurable adapter (default: `Req`) and normalises common Telegram error cases.
-- **Webhook parsing** – `Gramex.Webhook` extracts users and message metadata from Telegram updates, with logging around unexpected payloads.
+- **Adapter-based API client** – `Gramex.Api` delegates requests to a configurable adapter (default: `Gramex.ApiReq`) and normalises common Telegram error cases; the `Gramex.ApiMock` adapter can be set in test environments to enable integration testing without hitting Telegram.
+- **Webhook parsing** – `Gramex.Webhook` extracts users and message metadata from Telegram updates.
 - **Plug helpers** – `Gramex.UserDataPlug` assigns Telegram user data to the connection; `Gramex.UserDataPersistencePlug` keeps your Ecto schema in sync.
 - **Testing harness** – `Gramex.Testing.BotCase` spins up a session registry, feeds webhook updates through your app, and provides helpers for simulating messages, callback buttons, photos, audio, and more.
-- **Mock API adapter** – `Gramex.ApiMock` records outbound calls during tests so you can assert on the bot’s behaviour without hitting Telegram.
 
 ## Installation
 Add Gramex to your dependencies in `mix.exs`:
@@ -17,9 +16,7 @@ Add Gramex to your dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:gramex, "~> 0.0.4"},
-    # Gramex relies on Jason for JSON encoding/decoding
-    {:jason, "~> 1.4"}
+    {:gramex, github: "mxgrn/gramex"}
   ]
 end
 ```
@@ -28,32 +25,6 @@ Fetch the dependencies:
 
 ```bash
 mix deps.get
-```
-
-Until the library is published on [hex.pm](https://hex.pm/), you can point the dependency at GitHub instead:
-
-```elixir
-{:gramex, github: "mxgrn/gramex"}
-```
-
-## Configuration
-Configure the default adapter in `config/config.exs` (optional – `Gramex.ApiReq` is the default):
-
-```elixir
-config :gramex, :adapter, Gramex.ApiReq
-```
-
-For your test environment, provide an endpoint so the testing helpers can drive your Phoenix app:
-
-```elixir
-# config/test.exs
-config :gramex, :endpoint, MyAppWeb.Endpoint
-```
-
-Switch to the mock adapter when you do not want to hit Telegram:
-
-```elixir
-config :gramex, :adapter, Gramex.ApiMock
 ```
 
 ## Usage
@@ -126,7 +97,7 @@ defmodule MyApp.Telegram.BotTest do
 
     session
     |> send_message("Hi bot!")
-    |> assert_text_matches("Hello")
+    |> assert_has_text("Hello")
   end
 end
 ```
@@ -135,7 +106,7 @@ Key helpers include:
 
 - `start_session/2` – spin up a private or group chat session backed by the `Registry`.
 - `send_message/3`, `send_photo/3`, `send_audio/3` – send updates through your webhook.
-- `assert_text_matches/2` and `assert_has_button/2` – assert on the most recent bot response.
+- `assert_has_text/2` and `assert_has_button/2` – assert on the most recent bot response.
 - `click_button/2` – simulate a callback query when the bot renders inline keyboards.
 
 Because the helpers post through `Phoenix.ConnTest`, your application pipeline (plugs, controllers, business logic) is exercised exactly as Telegram would.

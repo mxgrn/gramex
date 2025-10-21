@@ -24,17 +24,11 @@ defmodule Gramex.ApiReq do
 
       # bot blocked
       {:ok, %{:body => %{"ok" => false, "description" => description, "error_code" => 403}}} ->
-        msg = "Gramex got back error_code: 403, description: #{description}"
-        Logger.warning(msg)
-
         # or maybe return error_code instead? this depends on whether we pass it to the user or keep it to ourselves
         {:blocked, description}
 
       # for example, telegram_id doesn't exist (any more)
       {:ok, %{:body => %{"ok" => false, "description" => description, "error_code" => 400}}} ->
-        msg = "Gramex got back error_code: 400, description: #{description}"
-        Logger.warning(msg)
-
         # or maybe return error_code instead? this depends on whether we pass it to the user or keep it to ourselves
         {:invalid_request, description}
 

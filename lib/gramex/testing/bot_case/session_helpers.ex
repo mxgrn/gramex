@@ -53,7 +53,7 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
     call_method(session, "sendMessage", opts |> Keyword.put(:text, text))
   end
 
-  def assert_text_matches(session, pattern) do
+  def assert_has_text(session, pattern) do
     case List.last(session.updates) do
       nil ->
         raise "No messages in session"
@@ -82,9 +82,6 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
   def assert_has_button(session, text) do
     find_update_with_button(session.updates, text)
     |> case do
-      nil ->
-        raise "No button with text #{text} found"
-
       # TODO: this should look into response instead of params, but we're not building it properly yet
       %{params: %{reply_markup: %{inline_keyboard: buttons}}} ->
         buttons
@@ -92,7 +89,7 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
         |> Enum.find(fn %{text: button_text} -> button_text =~ text end)
         |> case do
           nil ->
-            raise "No button with text #{text} found"
+            raise "No button with text '#{text}' found"
 
           _ ->
             session
@@ -100,12 +97,27 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
     end
   end
 
+  def assert_voice(session, caption) do
+    List.last(session.updates)
+    |> case do
+      %{params: %{voice: _, caption: received_caption}} when is_binary(received_caption) ->
+        if received_caption =~ caption do
+          session
+        else
+          raise "Expected voice message caption to contain '#{caption}', but got: '#{received_caption}'"
+        end
+
+      %{params: %{voice: _}} ->
+        raise "No caption found in voice message"
+
+      _ ->
+        raise "No voice message found"
+    end
+  end
+
   def click_button(%{user: user} = session, text) do
     find_update_with_button(session.updates, text)
     |> case do
-      nil ->
-        raise "No button with text #{text} found"
-
       # TODO: this should look into response instead of params, but we're not building it properly yet
       %{params: %{reply_markup: %{inline_keyboard: buttons}}} = update ->
         buttons
@@ -113,7 +125,7 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
         |> Enum.find(fn %{text: button_text} -> button_text =~ text end)
         |> case do
           nil ->
-            raise "No button with text #{text} found"
+            raise "No button with text '#{text}' found"
 
           %{callback_data: callback_data} ->
             Webhook.post_update(
@@ -132,20 +144,28 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
     Registry.get_session(user.id)
   end
 
-  defp find_update_with_button(updates, text) do
-    # for now only check the last update
-    updates = [List.last(updates)]
+  defp find_update_with_button([], _text) do
+    raise "Session is empty"
+  end
 
-    Enum.find(updates, fn
-      # TODO: this should look into response instead of params, but we're not building it properly yet
-      %{params: %{reply_markup: %{inline_keyboard: buttons}}} ->
-        buttons
-        |> List.flatten()
-        |> Enum.any?(fn %{text: button_text} -> button_text =~ text end)
+  # for now only checks the last update
+  defp find_update_with_button(updates, text) do
+    List.last(updates)
+    |> case do
+      %{params: %{reply_markup: %{inline_keyboard: buttons}}} = update ->
+        buttons =
+          buttons
+          |> List.flatten()
+
+        if Enum.any?(buttons, fn %{text: button_text} -> button_text =~ text end) do
+          update
+        else
+          raise "No button with text '#{text}' found.\nButtons in the last message: #{Enum.map_join(buttons, ", ", &"'#{&1.text}'")}"
+        end
 
       _ ->
-        false
-    end)
+        raise "No buttons found in the last message"
+    end
   end
 
   def build_telegram_update_for_method(method, params) do
