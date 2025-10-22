@@ -11,4 +11,19 @@ defmodule Gramex.Utils do
   end
 
   def deep_stringify_keys(v), do: v
+
+  def deep_atomize_keys(%{} = map) do
+    Map.new(map, fn {k, v} ->
+      {
+        if(is_atom(k), do: k, else: String.to_atom(k)),
+        deep_atomize_keys(v)
+      }
+    end)
+  end
+
+  def deep_atomize_keys(list) when is_list(list) do
+    Enum.map(list, &deep_atomize_keys/1)
+  end
+
+  def deep_atomize_keys(v), do: v
 end

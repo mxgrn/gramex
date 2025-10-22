@@ -151,6 +151,8 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
   # for now only checks the last update
   defp find_update_with_button(updates, text) do
     List.last(updates)
+    |> Map.from_struct()
+    |> Gramex.Utils.deep_atomize_keys()
     |> case do
       %{params: %{reply_markup: %{inline_keyboard: buttons}}} = update ->
         buttons =
