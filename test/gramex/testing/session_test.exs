@@ -128,7 +128,7 @@ defmodule Gramex.Testing.SessionTest do
         }
       })
 
-      assert_raise RuntimeError, ~r/No button with text Bad found/, fn ->
+      assert_raise RuntimeError, ~r/No button with text 'Bad' found/, fn ->
         session
         |> reload_session()
         |> assert_has_button("Bad")
@@ -202,7 +202,7 @@ defmodule Gramex.Testing.SessionTest do
         %{}
       end)
 
-      assert_raise RuntimeError, ~r/No button with text Bad found/, fn ->
+      assert_raise RuntimeError, ~r/No button with text 'Bad' found/, fn ->
         session
         |> reload_session()
         |> click_button("Bad")
