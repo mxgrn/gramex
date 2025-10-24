@@ -146,7 +146,7 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
               build_telegram_update(:callback_query,
                 data: callback_data,
                 from: Map.from_struct(user),
-                message: update.params
+                message: update.params |> Map.put(:message_id, update.response.message_id)
               )
             )
 
