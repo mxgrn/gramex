@@ -18,7 +18,8 @@ defmodule Gramex.UserDataPersistencePlugTest do
       :telegram_last_name,
       :telegram_language_code,
       :telegram_is_premium,
-      :telegram_last_message
+      :telegram_last_message,
+      :updated_at
     ]
 
     def changeset(user, attrs) do
@@ -52,9 +53,7 @@ defmodule Gramex.UserDataPersistencePlugTest do
         changeset: :changeset
       ]
 
-      expect(MockRepo, :get_by, fn TestUser, [telegram_id: 12345] -> nil end)
-
-      expect(MockRepo, :insert!, fn user ->
+      expect(MockRepo, :insert!, fn user, opts ->
         assert user.telegram_id == 12345
         assert user.telegram_username == "testuser"
         assert user.telegram_is_bot == false
@@ -62,6 +61,9 @@ defmodule Gramex.UserDataPersistencePlugTest do
         assert user.telegram_last_name == "User"
         assert user.telegram_language_code == "en"
         assert user.telegram_is_premium == true
+        assert opts[:on_conflict] == {:replace, [:telegram_username, :telegram_is_bot, :telegram_first_name, :telegram_last_name, :telegram_language_code, :telegram_is_premium, :telegram_last_message, :updated_at]}
+        assert opts[:conflict_target] == :telegram_id
+        assert opts[:returning] == true
         %{user | id: 123}
       end)
 
@@ -82,12 +84,6 @@ defmodule Gramex.UserDataPersistencePlugTest do
         "is_premium" => false
       }
 
-      existing_user = %TestUser{
-        id: 999,
-        telegram_id: 12345,
-        telegram_username: "olduser"
-      }
-
       conn =
         conn(:get, "/")
         |> assign(:telegram_user_data, telegram_user_data)
@@ -98,11 +94,12 @@ defmodule Gramex.UserDataPersistencePlugTest do
         changeset: :changeset
       ]
 
-      expect(MockRepo, :get_by, fn TestUser, [telegram_id: 12345] -> existing_user end)
-
-      expect(MockRepo, :update!, fn user ->
-        assert user.id == 999
-        user
+      expect(MockRepo, :insert!, fn user, opts ->
+        assert user.telegram_username == "updateduser"
+        assert user.telegram_first_name == "Updated"
+        assert opts[:on_conflict] == {:replace, [:telegram_username, :telegram_is_bot, :telegram_first_name, :telegram_last_name, :telegram_language_code, :telegram_is_premium, :telegram_last_message, :updated_at]}
+        assert opts[:conflict_target] == :telegram_id
+        %{user | id: 999}
       end)
 
       result_conn = UserDataPersistencePlug.call(conn, opts)
@@ -129,9 +126,7 @@ defmodule Gramex.UserDataPersistencePlugTest do
         changeset: :changeset
       ]
 
-      expect(MockRepo, :get_by, fn TestUser, [telegram_id: 12345] -> nil end)
-
-      expect(MockRepo, :insert!, fn user ->
+      expect(MockRepo, :insert!, fn user, _opts ->
         assert user.telegram_last_message == "Hello world"
         %{user | id: 123}
       end)
@@ -158,8 +153,7 @@ defmodule Gramex.UserDataPersistencePlugTest do
         user_assigns_key: :my_custom_user
       ]
 
-      expect(MockRepo, :get_by, fn TestUser, [telegram_id: 12345] -> nil end)
-      expect(MockRepo, :insert!, fn user -> %{user | id: 123} end)
+      expect(MockRepo, :insert!, fn user, _opts -> %{user | id: 123} end)
 
       result_conn = UserDataPersistencePlug.call(conn, opts)
 

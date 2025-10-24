@@ -23,7 +23,7 @@ defmodule Gramex.Testing.SessionTest do
     end
   end
 
-  describe "assert_has_text/2" do
+  describe "assert_text/2" do
     test "passes when text contains string" do
       user = User.new(id: @chat_id)
 
@@ -36,8 +36,8 @@ defmodule Gramex.Testing.SessionTest do
 
       session
       |> reload_session()
-      |> assert_has_text("Welcome")
-      |> assert_has_text("How are you")
+      |> assert_text("Welcome")
+      |> assert_text("How are you")
     end
 
     test "passes when text matches regex" do
@@ -52,7 +52,7 @@ defmodule Gramex.Testing.SessionTest do
 
       session
       |> reload_session()
-      |> assert_has_text(~r/code is: \d+/)
+      |> assert_text(~r/code is: \d+/)
     end
 
     test "raises when text does not contain string" do
@@ -68,7 +68,7 @@ defmodule Gramex.Testing.SessionTest do
       assert_raise RuntimeError, ~r/Expected message text to contain 'Goodbye'/, fn ->
         session
         |> reload_session()
-        |> assert_has_text("Goodbye")
+        |> assert_text("Goodbye")
       end
     end
 
@@ -85,7 +85,7 @@ defmodule Gramex.Testing.SessionTest do
       assert_raise RuntimeError, ~r/Expected message text to match/, fn ->
         session
         |> reload_session()
-        |> assert_has_text(~r/^\d+$/)
+        |> assert_text(~r/^\d+$/)
       end
     end
   end

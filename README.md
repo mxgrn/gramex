@@ -97,7 +97,7 @@ defmodule MyApp.Telegram.BotTest do
 
     session
     |> send_message("Hi bot!")
-    |> assert_has_text("Hello")
+    |> assert_text("Hello")
   end
 end
 ```
@@ -106,7 +106,7 @@ Key helpers include:
 
 - `start_session/2` – spin up a private or group chat session backed by the `Registry`.
 - `send_message/3`, `send_photo/3`, `send_audio/3` – send updates through your webhook.
-- `assert_has_text/2` and `assert_has_button/2` – assert on the most recent bot response.
+- `assert_text/2` and `assert_has_button/2` – assert on the most recent bot response.
 - `click_button/2` – simulate a callback query when the bot renders inline keyboards.
 
 Because the helpers post through `Phoenix.ConnTest`, your application pipeline (plugs, controllers, business logic) is exercised exactly as Telegram would.

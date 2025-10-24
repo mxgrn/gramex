@@ -53,7 +53,7 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
     call_method(session, "sendMessage", opts |> Keyword.put(:text, text))
   end
 
-  def assert_has_text(session, pattern) do
+  def assert_text(session, pattern) do
     case List.last(session.updates) do
       nil ->
         raise "No messages in session"
@@ -76,6 +76,19 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
 
       update ->
         raise "Last update does not contain text: #{inspect(update)}"
+    end
+  end
+
+  def assert_method(session, method) do
+    case List.last(session.updates) do
+      nil ->
+        raise "No messages in session"
+
+      %{method: ^method} ->
+        session
+
+      %{method: other_method} ->
+        raise "Expected method '#{method}', but got '#{other_method}'"
     end
   end
 

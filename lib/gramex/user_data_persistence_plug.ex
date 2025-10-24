@@ -33,27 +33,32 @@ defmodule Gramex.UserDataPersistencePlug do
         telegram_first_name: user_data["first_name"],
         telegram_last_name: user_data["last_name"],
         telegram_language_code: user_data["language_code"],
-        telegram_is_premium: !!user_data["is_premium"]
+        telegram_is_premium: !!user_data["is_premium"],
+        telegram_last_message: user_data["last_message"],
+        updated_at: DateTime.utc_now()
       }
-      |> then(fn user_attrs ->
-        if last_message = user_data["last_message"] do
-          Map.put(user_attrs, :telegram_last_message, last_message)
-        else
-          user_attrs
-        end
-      end)
 
     user =
       user_data["id"] &&
-        case repo.get_by(schema, telegram_id: user_data["id"]) do
-          nil ->
-            apply(schema, changeset, [struct(schema), user_attrs])
-            |> repo.insert!()
-
-          user ->
-            apply(schema, changeset, [user, user_attrs])
-            |> repo.update!()
-        end
+        apply(schema, changeset, [struct(schema), user_attrs])
+        |> repo.insert!(
+          on_conflict:
+            {:replace,
+             [
+               :telegram_username,
+               :telegram_is_bot,
+               :telegram_first_name,
+               :telegram_last_name,
+               :telegram_language_code,
+               :telegram_is_premium,
+               # don't reset it in the DB if not provided
+               if(user_attrs.telegram_last_message, do: :telegram_last_message),
+               :updated_at
+             ]
+             |> Enum.filter(& &1)},
+          conflict_target: :telegram_id,
+          returning: true
+        )
 
     conn
     |> Plug.Conn.assign(user_assigns_key, user)
