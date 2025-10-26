@@ -4,13 +4,12 @@ defmodule Gramex.UserDataPlug do
   """
   import Plug.Conn
 
-  # alias GramexWeb.Webhook
-  alias Gramex.Webhook
+  alias Gramex.Updates
 
   def init(opts), do: opts
 
   def call(conn, opts) do
-    Webhook.extract_user_data(conn.params)
+    Updates.extract_user_data(conn.params)
     |> case do
       nil ->
         if opts[:halt_if_nil] do
@@ -25,7 +24,7 @@ defmodule Gramex.UserDataPlug do
 
       user_data ->
         user_data =
-          Webhook.extract_message(conn.params)
+          Updates.extract_message(conn.params)
           |> case do
             nil -> user_data
             message -> Map.put(user_data, "last_message", message)

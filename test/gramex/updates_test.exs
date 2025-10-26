@@ -1,7 +1,7 @@
 defmodule Gramex.WebhookTest do
   use ExUnit.Case, async: true
 
-  alias Gramex.Webhook
+  alias Gramex.Updates
 
   describe "extract_user_data/1" do
     test "doesn't crash for channel post" do
@@ -35,7 +35,7 @@ defmodule Gramex.WebhookTest do
         update_id: 420_823_383
       }
 
-      assert Webhook.extract_user_data(update) == nil
+      assert Updates.extract_user_data(update) == nil
     end
   end
 end

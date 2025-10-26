@@ -1,10 +1,13 @@
-defmodule Gramex.Webhook do
+defmodule Gramex.Updates do
   @moduledoc """
   Extract user data from [update params](https://core.telegram.org/bots/api#update).
   """
 
   require Logger
 
+  @doc """
+  Extracts the user data from the update params.
+  """
   def extract_user_data(%{} = update) do
     update
     |> Map.delete("update_id")
