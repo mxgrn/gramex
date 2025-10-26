@@ -39,26 +39,19 @@ defmodule Gramex.UserDataPersistencePlug do
       }
 
     user =
-      user_data["id"] &&
-        apply(schema, changeset, [struct(schema), user_attrs])
-        |> repo.insert!(
-          on_conflict:
-            {:replace,
-             [
-               :telegram_username,
-               :telegram_is_bot,
-               :telegram_first_name,
-               :telegram_last_name,
-               :telegram_language_code,
-               :telegram_is_premium,
-               # don't reset it in the DB if not provided
-               if(user_attrs.telegram_last_message, do: :telegram_last_message),
-               :updated_at
-             ]
-             |> Enum.filter(& &1)},
-          conflict_target: :telegram_id,
-          returning: true
-        )
+      if user_data["id"] do
+        repo.transact(fn ->
+          case repo.get_by(schema, telegram_id: user_data["id"]) do
+            nil ->
+              apply(schema, changeset, [struct(schema), user_attrs])
+              |> repo.insert!(returning: true)
+
+            existing_user ->
+              apply(schema, changeset, [existing_user, user_attrs])
+              |> repo.update!(returning: true)
+          end
+        end)
+      end
 
     conn
     |> Plug.Conn.assign(user_assigns_key, user)
