@@ -36,9 +36,16 @@ defmodule Gramex.UserDataPersistencePlug do
         telegram_last_name: user_data["last_name"],
         telegram_language_code: user_data["language_code"],
         telegram_is_premium: !!user_data["is_premium"],
-        telegram_last_message: user_data["last_message"],
         updated_at: DateTime.utc_now()
       }
+      |> then(fn attrs ->
+        # This is instead of passing nil in the map above, as we do NOT want to override telegram_last_message with nil
+        if Map.has_key?(user_data, "last_message") do
+          Map.put(attrs, :telegram_last_message, user_data["last_message"])
+        else
+          attrs
+        end
+      end)
 
     if user_data["id"] do
       repo.transact(fn ->

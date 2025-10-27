@@ -46,8 +46,7 @@ defmodule Gramex.UserDataPersistencePlugTest do
                  telegram_last_name: "User",
                  telegram_language_code: "en",
                  telegram_is_premium: true,
-                 updated_at: _dt,
-                 telegram_last_message: _
+                 updated_at: _dt
                } = attrs
 
         %{}
@@ -99,8 +98,7 @@ defmodule Gramex.UserDataPersistencePlugTest do
                  telegram_last_name: "Name",
                  telegram_language_code: "fr",
                  telegram_is_premium: false,
-                 updated_at: _dt,
-                 telegram_last_message: _
+                 updated_at: _dt
                } = attrs
 
         %{}
@@ -141,7 +139,7 @@ defmodule Gramex.UserDataPersistencePlugTest do
       assert result_conn.assigns.current_user.id == 456
     end
 
-    test "includes last_message when present" do
+    test "stores telegram_last_message" do
       telegram_user_data = %{
         "id" => 12345,
         "username" => "testuser",
@@ -162,6 +160,35 @@ defmodule Gramex.UserDataPersistencePlugTest do
 
       expect(MockUser, :changeset, fn _user, attrs ->
         assert attrs.telegram_last_message == "Hello world"
+
+        %{}
+      end)
+
+      expect(MockRepo, :insert!, fn _changeset, _opts -> %{} end)
+
+      UserDataPersistencePlug.call(conn, opts)
+    end
+
+    test "doesn't reset telegram_last_message when user_data doesn't have it" do
+      telegram_user_data = %{
+        "id" => 12345,
+        "username" => "testuser",
+        "is_bot" => false,
+        "first_name" => "Test"
+      }
+
+      conn =
+        conn(:get, "/")
+        |> assign(:telegram_user_data, telegram_user_data)
+
+      opts = [
+        repo: MockRepo,
+        schema: MockUser,
+        changeset: :changeset
+      ]
+
+      expect(MockUser, :changeset, fn _user, attrs ->
+        refute Map.has_key?(attrs, :telegram_last_message)
 
         %{}
       end)
