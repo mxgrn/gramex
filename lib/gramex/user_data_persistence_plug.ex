@@ -12,6 +12,8 @@ defmodule Gramex.UserDataPersistencePlug do
 
   @behaviour Plug
 
+  require Logger
+
   @impl Plug
   def init(opts), do: opts
 
@@ -38,22 +40,30 @@ defmodule Gramex.UserDataPersistencePlug do
         updated_at: DateTime.utc_now()
       }
 
-    user =
-      if user_data["id"] do
-        repo.transact(fn ->
-          case repo.get_by(schema, telegram_id: user_data["id"]) do
-            nil ->
-              apply(schema, changeset, [struct(schema), user_attrs])
-              |> repo.insert!(returning: true)
+    if user_data["id"] do
+      repo.transact(fn ->
+        case repo.get_by(schema, telegram_id: user_data["id"]) do
+          nil ->
+            apply(schema, changeset, [struct(schema), user_attrs])
+            |> repo.insert!(returning: true)
 
-            existing_user ->
-              apply(schema, changeset, [existing_user, user_attrs])
-              |> repo.update!(returning: true)
-          end
-        end)
-      end
+          existing_user ->
+            apply(schema, changeset, [existing_user, user_attrs])
+            |> repo.update!(returning: true)
+        end
+        |> then(&{:ok, &1})
+      end)
+    else
+      {:error, :no_telegram_id}
+    end
+    |> case do
+      {:ok, user} ->
+        user
 
-    conn
-    |> Plug.Conn.assign(user_assigns_key, user)
+      {:error, reason} ->
+        Logger.warning("Failed to persist user data: #{inspect(reason)}")
+        nil
+    end
+    |> then(&Plug.Conn.assign(conn, user_assigns_key, &1))
   end
 end

@@ -1,4 +1,7 @@
 defmodule Gramex.UserDataPersistencePlugTest do
+  # Note: we cannot test the transact behaviour properly, e.g. when the transacting function raises, as we don't want to depend on Ecto.
+  # So, this case probably should be covered in the client code that uses UserDataPersistencePlug.
+
   use ExUnit.Case, async: true
 
   import Mimic
@@ -50,9 +53,15 @@ defmodule Gramex.UserDataPersistencePlugTest do
         %{}
       end)
 
-      expect(MockRepo, :insert!, fn _changeset, opts ->
+      MockRepo
+      |> expect(:insert!, fn _changeset, opts ->
         assert opts[:returning] == true
         %{id: 123}
+      end)
+      |> expect(:transact, fn fun ->
+        transact_result = fun.()
+        assert transact_result == {:ok, %{id: 123}}
+        transact_result
       end)
 
       conn = UserDataPersistencePlug.call(conn, opts)
@@ -187,6 +196,24 @@ defmodule Gramex.UserDataPersistencePlugTest do
 
       assert result_conn.assigns.my_custom_user.id == 123
       refute Map.has_key?(result_conn.assigns, :current_user)
+    end
+
+    test "current_user is assigned nil when user_data has no id" do
+      telegram_user_data = %{}
+
+      conn =
+        conn(:get, "/")
+        |> assign(:telegram_user_data, telegram_user_data)
+
+      opts = [
+        repo: MockRepo,
+        schema: MockUser,
+        changeset: :changeset
+      ]
+
+      conn = UserDataPersistencePlug.call(conn, opts)
+
+      refute conn.assigns.current_user
     end
   end
 end
