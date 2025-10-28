@@ -209,4 +209,47 @@ defmodule Gramex.Testing.SessionTest do
       end
     end
   end
+
+  describe "assert_voice/2" do
+    test "passes when voice message with caption exists" do
+      user = User.new(id: @chat_id)
+
+      session = start_session(user)
+
+      Api.request(nil, "sendVoice", %{
+        chat_id: @chat_id,
+        voice: %{
+          file_id: "AwACAgQAAxkDAAJzFWjlB9OUC4s_pIHVYKS-ieK3sHoiAAI4CQACB9MtU4WkBGdJkGgeNgQ",
+          duration: 5
+        },
+        caption: "Here is your voice message"
+      })
+
+      session
+      |> reload_session()
+      |> assert_voice("your voice message")
+    end
+  end
+
+  describe "assert_invoice/2" do
+    test "passes when invoice message with title exists" do
+      user = User.new(id: @chat_id)
+
+      session = start_session(user)
+
+      Api.request(nil, "sendInvoice", %{
+        chat_id: @chat_id,
+        title: "Premium Subscription",
+        description: "Access to all features",
+        payload: "payload_123",
+        provider_token: "provider_token_abc",
+        currency: "USD",
+        prices: [%{label: "Subscription", amount: 999}]
+      })
+
+      session
+      |> reload_session()
+      |> assert_invoice("Premium Subscription")
+    end
+  end
 end

@@ -110,6 +110,24 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
     end
   end
 
+  def assert_invoice(session, caption) do
+    List.last(session.updates)
+    |> case do
+      %{response: %{"invoice" => %{"title" => received_title}}} when is_binary(received_title) ->
+        if received_title =~ caption do
+          session
+        else
+          raise "Expected invoice message title to contain '#{caption}', but got: '#{received_title}'"
+        end
+
+      %{response: %{"invoice" => _}} ->
+        raise "No title found in invoice"
+
+      _ ->
+        raise "No invoice found in the update"
+    end
+  end
+
   def assert_voice(session, caption) do
     List.last(session.updates)
     |> case do
