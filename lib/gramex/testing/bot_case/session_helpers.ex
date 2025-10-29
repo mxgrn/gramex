@@ -1,6 +1,8 @@
 defmodule Gramex.Testing.BotCase.SessionHelpers do
   @moduledoc """
   Helpers that get imported when `using` `Gramex.Testing.BotCase`.
+
+  Most of these methods is a bot calling us, on behalf of a user, _not_ the other way round.
   """
 
   alias Gramex.Testing.Sessions.Chat
@@ -26,15 +28,23 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
     Registry.get_session(chat_id)
   end
 
+  def send_message(session, text, opts \\ []) do
+    send_update(session, :message, opts |> Keyword.put(:text, text))
+  end
+
   def send_audio(session, audio, opts \\ []) do
-    call_method(session, "sendAudio", opts |> Keyword.put(:audio, audio))
+    send_update(session, :audio, opts |> Keyword.put(:audio, audio))
   end
 
   def send_photo(session, photo, opts \\ []) do
-    call_method(session, "sendPhoto", opts |> Keyword.put(:photo, photo))
+    send_update(session, :photo, opts |> Keyword.put(:photo, photo))
   end
 
-  def call_method(session, method, params) do
+  def send_successful_payment(session, opts \\ []) do
+    send_update(session, :successful_payment, opts)
+  end
+
+  def send_update(session, method, params) do
     Webhook.post_update(
       session.webhook_path,
       build_telegram_update_for_method(
@@ -47,10 +57,6 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
 
     # return updated session
     Registry.get_session(session.chat.id)
-  end
-
-  def send_message(session, text, opts \\ []) do
-    call_method(session, "sendMessage", opts |> Keyword.put(:text, text))
   end
 
   def assert_text(session, pattern) do
@@ -201,36 +207,38 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
     end
   end
 
-  def build_telegram_update_for_method(method, params) do
-    params =
-      Keyword.validate!(params,
-        from: %{},
-        chat: %{},
-        text: "some text",
-        photo: "some photo",
-        audio: "some audio",
-        date: DateTime.utc_now(),
-        reply_to_message: nil,
-        message_id: :rand.uniform(1_000_000)
-      )
-
-    date = params[:date] |> DateTime.to_unix()
+  def build_telegram_update_for_method(method, opts) do
+    date = (opts[:date] || DateTime.utc_now()) |> DateTime.to_unix()
+    message_id = opts[:message_id] || :rand.uniform(1_000_000)
 
     message =
       %{
-        "message_id" => params[:message_id],
+        "message_id" => message_id,
         "date" => date,
-        "chat" => params[:chat],
-        "from" => params[:from],
-        "text" => if(method == "sendMessage", do: params[:text]),
-        "caption" => if(method == "sendPhoto", do: params[:caption]),
-        "photo" => if(method == "sendPhoto", do: build_object(:photo, params)),
-        "audio" => if(method == "sendAudio", do: params[:audio]),
-        "reply_to_message" => params[:reply_to_message]
+        "chat" => opts[:chat],
+        "from" => opts[:from],
+        "text" => if(method == :message, do: opts[:text]),
+        "caption" => if(method == :photo, do: opts[:caption]),
+        "photo" => if(method == :photo, do: build_object(:photo, opts)),
+        "audio" => if(method == :audio, do: opts[:audio]),
+        "reply_to_message" => opts[:reply_to_message],
+        "successful_payment" =>
+          if(method == :successful_payment, do: build_object(:successful_payment, opts))
       }
       |> Map.reject(fn {_k, v} -> is_nil(v) end)
 
     %{"message" => message, "update_id" => :rand.uniform(1_000_000_000)}
+  end
+
+  def build_object(:successful_payment, opts) do
+    %{
+      "currency" => "XTR",
+      "total_amount" => opts[:total_amount] || 1000,
+      "invoice_payload" => opts[:invoice_payload] || "some_payload",
+      "shipping_option_id" => "some_option",
+      "telegram_payment_charge_id" => "charge_id_123",
+      "provider_payment_charge_id" => "provider_charge_id_456"
+    }
   end
 
   def build_object(:photo, params) do
