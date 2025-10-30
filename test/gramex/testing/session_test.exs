@@ -159,7 +159,8 @@ defmodule Gramex.Testing.SessionTest do
                    "data" => "feedback",
                    "message" => %{
                      "message_id" => _,
-                     "from" => %{"id" => @chat_id}
+                     "from" => %{"id" => @chat_id},
+                     "chat" => %{"id" => @chat_id}
                    }
                  }
                } = update

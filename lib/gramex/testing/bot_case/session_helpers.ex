@@ -266,6 +266,26 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
     }
   end
 
+  def build_object(:chat, opts) do
+    %{
+      "id" => opts[:chat_id] || :rand.uniform(1_000_000_000),
+      "type" => "private",
+      "first_name" => "Test",
+      "last_name" => "User",
+      "username" => "testuser"
+    }
+  end
+
+  def build_object(:user, opts) do
+    %{
+      "id" => opts[:chat_id] || :rand.uniform(1_000_000_000),
+      "is_bot" => false,
+      "first_name" => "Test",
+      "last_name" => "User",
+      "username" => "testuser"
+    }
+  end
+
   def build_telegram_update(:message, opts) do
     opts =
       Keyword.validate!(opts,
@@ -299,8 +319,10 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
 
     message =
       opts[:message]
+      |> Map.delete(:chat_id)
       |> Map.put_new(:message_id, :rand.uniform(1_000_000))
-      |> Map.put_new(:from, opts[:from])
+      |> Map.put_new(:chat, build_object(:chat, opts[:message]))
+      |> Map.put_new(:from, build_object(:user, opts[:message]))
       |> Gramex.Utils.deep_stringify_keys()
 
     %{
