@@ -18,7 +18,7 @@ defmodule Gramex.Updates do
         obj["from"] || obj["user"]
 
       _ ->
-        Logger.error("No user data found in: #{inspect(update)}")
+        Logger.info("No user data found in: #{inspect(update)}")
         nil
     end
   end

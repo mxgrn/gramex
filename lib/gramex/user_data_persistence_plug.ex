@@ -68,7 +68,7 @@ defmodule Gramex.UserDataPersistencePlug do
         user
 
       {:error, reason} ->
-        Logger.warning("Failed to persist user data: #{inspect(reason)}")
+        Logger.info("Failed to persist user data: #{inspect(reason)}")
         nil
     end
     |> then(&Plug.Conn.assign(conn, user_assigns_key, &1))
