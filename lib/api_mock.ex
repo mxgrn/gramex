@@ -30,19 +30,11 @@ defmodule Gramex.ApiMock do
     {:ok, response}
   end
 
-  def request(_token, "sendChatAction" = method, %{chat_id: chat_id} = params) do
-    update_id = :rand.uniform(1_000_000)
-
+  # do NOT store this in action, as it doesn't result in any sort of a message
+  def request(_token, "sendChatAction", _params) do
     response =
       true
       |> normalize_response()
-
-    Registry.append_to_session(chat_id, %Update{
-      method: method,
-      update_id: update_id,
-      params: params,
-      response: response
-    })
 
     {:ok, response}
   end

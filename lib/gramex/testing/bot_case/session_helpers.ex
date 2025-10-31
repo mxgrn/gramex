@@ -181,6 +181,27 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
     Registry.get_session(user.id)
   end
 
+  def refute_has_button(%{user: user} = session, text) do
+    session.updates
+    |> List.last()
+    |> case do
+      # TODO: this should look into response instead of params, but we're not building it properly yet
+      %{params: %{reply_markup: %{inline_keyboard: buttons}}} ->
+        buttons
+        |> List.flatten()
+        |> Enum.find(fn %{text: button_text} -> button_text =~ text end)
+        |> case do
+          nil ->
+            session
+
+          %{callback_data: _} ->
+            raise "I didn’t expect to, but I found a button labeled '#{text}'"
+        end
+    end
+
+    Registry.get_session(user.id)
+  end
+
   defp find_update_with_button([], _text) do
     raise "Session is empty"
   end
