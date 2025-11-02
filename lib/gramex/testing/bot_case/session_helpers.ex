@@ -202,6 +202,43 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
     Registry.get_session(user.id)
   end
 
+  @doc """
+  Repeatedly runs the given `assertion_fun` until it passes or the timeout is reached.
+  Useful for testing asynchronous behavior.
+
+  Examples:
+
+      eventually(session, fn session ->
+        assert_text(session, "Expected Text")
+      end)
+
+      eventually(&click_button(&1, "Click Me"))
+  """
+  def eventually(session, assertion_fun, opts \\ []) when is_function(assertion_fun, 1) do
+    timeout = opts[:timeout] || 100
+    interval = opts[:interval] || 20
+    start_time = System.monotonic_time(:millisecond)
+    do_eventually(session, assertion_fun, start_time, timeout, interval)
+  end
+
+  defp do_eventually(session, assertion_fun, start_time, timeout, interval) do
+    assertion_fun.(session)
+    session
+  rescue
+    e in [ExUnit.AssertionError, RuntimeError, MatchError] ->
+      current_time = System.monotonic_time(:millisecond)
+
+      if current_time - start_time < timeout do
+        :timer.sleep(interval)
+
+        session
+        |> reload_session()
+        |> do_eventually(assertion_fun, start_time, timeout, interval)
+      else
+        reraise e, __STACKTRACE__
+      end
+  end
+
   defp find_update_with_button([], _text) do
     raise "Session is empty"
   end

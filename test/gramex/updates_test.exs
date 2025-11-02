@@ -1,4 +1,4 @@
-defmodule Gramex.WebhookTest do
+defmodule Gramex.UpdatesTest do
   use ExUnit.Case, async: true
 
   alias Gramex.Updates
