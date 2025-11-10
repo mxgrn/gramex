@@ -10,7 +10,7 @@ defmodule Gramex.Testing.Sessions.Session do
     opts =
       Keyword.validate!(opts,
         id: :rand.uniform(1_000_000_000),
-        chat: user,
+        chat: chat_from_user(user),
         updates: [],
         webhook_path: "/telegram"
       )
@@ -35,5 +35,11 @@ defmodule Gramex.Testing.Sessions.Session do
       updates: opts[:updates],
       webhook_path: opts[:webhook_path]
     }
+  end
+
+  defp chat_from_user(%User{} = user) do
+    Map.from_struct(user)
+    |> Map.put(:type, "private")
+    |> then(&struct(Chat, &1))
   end
 end

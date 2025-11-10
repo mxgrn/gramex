@@ -6,10 +6,7 @@ defmodule Gramex.Testing.Sessions.Chat do
       %{
         id: :rand.uniform(1_000_000_000) * if(:rand.uniform() > 0.5, do: 1, else: -1),
         type: "group",
-        title: "Some Chat",
-        username: nil,
-        first_name: nil,
-        last_name: nil
+        title: "Some Chat"
       }
       |> Map.merge(attrs |> Map.new())
 

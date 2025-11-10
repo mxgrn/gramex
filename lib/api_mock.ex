@@ -8,8 +8,13 @@ defmodule Gramex.ApiMock do
     update_id = :rand.uniform(1_000_000)
     message_id = :rand.uniform(1_000_000)
 
+    session = Registry.get_session(chat_id)
+
     response =
-      build_response_by_method(method, message_id, params)
+      build_response_by_method(method, params)
+      |> Map.put(:chat, Map.from_struct(session.chat))
+      |> Map.put(:from, Map.from_struct(session.user))
+      |> Map.put(:message_id, message_id)
       |> normalize_response()
 
     Registry.append_to_session(chat_id, %Update{
@@ -93,30 +98,26 @@ defmodule Gramex.ApiMock do
   end
 
   # veeery simplified, see https://core.telegram.org/bots/api#message
-  defp build_response_by_method("sendMessage", message_id, params) do
+  defp build_response_by_method("sendMessage", params) do
     %{
-      message_id: message_id,
       text: params[:text]
     }
   end
 
-  defp build_response_by_method("sendPhoto", message_id, params) do
+  defp build_response_by_method("sendPhoto", params) do
     %{
-      message_id: message_id,
       photo: params[:photo]
     }
   end
 
-  defp build_response_by_method("sendVoice", message_id, params) do
+  defp build_response_by_method("sendVoice", params) do
     %{
-      message_id: message_id,
       voice: params[:voice]
     }
   end
 
-  defp build_response_by_method("sendInvoice", message_id, params) do
+  defp build_response_by_method("sendInvoice", params) do
     %{
-      message_id: message_id,
       invoice: %{
         title: params[:title],
         description: params[:description],

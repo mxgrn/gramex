@@ -44,14 +44,22 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
     send_update(session, :successful_payment, opts)
   end
 
-  def send_update(session, method, params) do
+  def send_message_reaction(session, reaction, opts \\ []) do
+    send_update(session, :message_reaction, Keyword.put(opts, :emoji, reaction))
+  end
+
+  def send_update(session, method, opts) do
     Webhook.post_update(
       session.webhook_path,
       build_telegram_update_for_method(
         method,
-        params
+        opts
         |> Keyword.put(:from, if(session.user, do: Map.from_struct(session.user)))
-        |> Keyword.put(:chat, Map.from_struct(session.chat || session.user))
+        |> Keyword.put(
+          :chat,
+          Map.from_struct(session.chat || session.user)
+        )
+        |> Keyword.put(:last_update, List.last(session.updates))
       )
     )
 
@@ -265,6 +273,10 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
     end
   end
 
+  def build_telegram_update_for_method(:message_reaction, opts) do
+    build_object(:message_reaction, opts)
+  end
+
   def build_telegram_update_for_method(method, opts) do
     date = (opts[:date] || DateTime.utc_now()) |> DateTime.to_unix()
     message_id = opts[:message_id] || :rand.uniform(1_000_000)
@@ -299,12 +311,29 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
     }
   end
 
-  def build_object(:photo, params) do
+  def build_object(:message_reaction, opts) do
+    message_id = opts[:last_update].response["message_id"]
+    opts[:last_update] |> dbg()
+
+    %{
+      "message_reaction" => %{
+        "chat" => build_object(:chat, opts),
+        "date" => 1_762_651_325,
+        "message_id" => message_id,
+        "new_reaction" => [%{"emoji" => opts[:emoji], "type" => "emoji"}],
+        "old_reaction" => [],
+        "user" => opts[:from] || build_object(:user, opts)
+      },
+      "update_id" => 262_155_568
+    }
+  end
+
+  def build_object(:photo, opts) do
     [
       %{
         # TODO generate these 2 as discussed in https://chatgpt.com/c/68ed9a33-2860-8324-96ec-8d839a23c41d
-        "file_id" => params[:photo],
-        "file_unique_id" => "unique_#{params[:photo]}",
+        "file_id" => opts[:photo],
+        "file_unique_id" => "unique_#{opts[:photo]}",
         "file_size" => 12345,
         "width" => 800,
         "height" => 600
@@ -312,10 +341,10 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
     ]
   end
 
-  def build_object(:audio, params) do
+  def build_object(:audio, opts) do
     %{
-      "file_id" => params[:audio],
-      "file_unique_id" => "unique_#{params[:audio]}",
+      "file_id" => opts[:audio],
+      "file_unique_id" => "unique_#{opts[:audio]}",
       "duration" => 120,
       "performer" => "Some Artist",
       "title" => "Some Title",
