@@ -12,10 +12,17 @@ defmodule Gramex.ApiMock do
 
     response =
       build_response_by_method(method, params)
-      |> Map.put(:chat, Map.from_struct(session.chat))
-      |> Map.put(:from, Map.from_struct(session.user))
-      |> Map.put(:message_id, message_id)
-      |> normalize_response()
+      |> case do
+        %{} = resp ->
+          resp
+          |> Map.put(:chat, Map.from_struct(session.chat))
+          |> Map.put(:from, Map.from_struct(session.user))
+          |> Map.put(:message_id, message_id)
+          |> normalize_response()
+
+        other ->
+          other
+      end
 
     Registry.append_to_session(chat_id, %Update{
       method: method,
@@ -79,6 +86,24 @@ defmodule Gramex.ApiMock do
     {:ok, response}
   end
 
+  def request(_token, "setMessageReaction" = method, %{chat_id: chat_id} = params) do
+    update_id = :rand.uniform(1_000_000)
+    message_id = :rand.uniform(1_000_000)
+
+    response =
+      %{message_id: message_id}
+      |> normalize_response()
+
+    Registry.append_to_session(chat_id, %Update{
+      method: method,
+      update_id: update_id,
+      params: params,
+      response: response
+    })
+
+    {:ok, response}
+  end
+
   def request(_token, method, _update) do
     raise "Not implemented: #{method}"
   end
@@ -125,5 +150,9 @@ defmodule Gramex.ApiMock do
         total_amount: params[:total_amount]
       }
     }
+  end
+
+  defp build_response_by_method("setMessageReaction", _params) do
+    true
   end
 end

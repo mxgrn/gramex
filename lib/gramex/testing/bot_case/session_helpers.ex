@@ -183,6 +183,9 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
             )
 
             session
+
+          _ ->
+            raise "No callback_data found for button '#{text}'"
         end
     end
 
