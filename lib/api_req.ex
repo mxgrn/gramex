@@ -5,7 +5,7 @@ defmodule Gramex.ApiReq do
   require Logger
 
   @doc """
-  `method` should be as per the Telegram API documentation, e.g. "getMe" or :getMe.
+  `method` is per the Telegram API documentation, e.g. "getMe" or :getMe.
   """
   def request(token, method, params \\ %{}) do
     Logger.info("Sending request to Telegram API: #{method} with params: #{inspect(params)}")

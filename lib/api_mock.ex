@@ -8,7 +8,9 @@ defmodule Gramex.ApiMock do
     update_id = :rand.uniform(1_000_000)
     message_id = :rand.uniform(1_000_000)
 
-    session = Registry.get_session(chat_id)
+    session =
+      Registry.get_session(chat_id) ||
+        raise "No session for chat_id #{chat_id}. Did you start one?"
 
     response =
       build_response_by_method(method, params)
