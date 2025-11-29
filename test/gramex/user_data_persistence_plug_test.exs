@@ -15,232 +15,370 @@ defmodule Gramex.UserDataPersistencePlugTest do
   setup :set_mimic_global
   setup :verify_on_exit!
 
-  describe "call/2" do
-    test "creates new user when user doesn't exist" do
-      telegram_user_data = %{
-        "id" => 12345,
-        "username" => "testuser",
-        "is_bot" => false,
-        "first_name" => "Test",
-        "last_name" => "User",
-        "language_code" => "en",
-        "is_premium" => true
+  test "creates new user when user doesn't exist" do
+    telegram_user_data = %{
+      "id" => 12345,
+      "username" => "testuser",
+      "is_bot" => false,
+      "first_name" => "Test",
+      "last_name" => "User",
+      "language_code" => "en",
+      "is_premium" => true
+    }
+
+    conn =
+      conn(:get, "/")
+      |> assign(:telegram_user_data, telegram_user_data)
+
+    opts = [
+      repo: MockRepo,
+      schema: MockUser,
+      changeset: :changeset
+    ]
+
+    expect(MockUser, :changeset, fn _user, attrs ->
+      assert %{
+               telegram_id: 12345,
+               telegram_username: "testuser",
+               telegram_is_bot: false,
+               telegram_first_name: "Test",
+               telegram_last_name: "User",
+               telegram_language_code: "en",
+               telegram_is_premium: true,
+               updated_at: _dt
+             } = attrs
+
+      %{}
+    end)
+
+    MockRepo
+    |> expect(:insert!, fn _changeset, opts ->
+      assert opts[:returning] == true
+      %{id: 123}
+    end)
+    |> expect(:transact, fn fun ->
+      transact_result = fun.()
+      assert transact_result == {:ok, %{id: 123}}
+      transact_result
+    end)
+
+    conn = UserDataPersistencePlug.call(conn, opts)
+
+    assert conn.assigns.current_user.id == 123
+  end
+
+  test "updates existing user when user exists" do
+    telegram_user_data = %{
+      "id" => 12345,
+      "username" => "updateduser",
+      "is_bot" => false,
+      "first_name" => "Updated",
+      "last_name" => "Name",
+      "language_code" => "fr",
+      "is_premium" => false
+    }
+
+    conn =
+      conn(:get, "/")
+      |> assign(:telegram_user_data, telegram_user_data)
+
+    opts = [
+      repo: MockRepo,
+      schema: MockUser,
+      changeset: :changeset
+    ]
+
+    expect(MockUser, :changeset, fn _user, attrs ->
+      assert %{
+               telegram_id: 12345,
+               telegram_username: "updateduser",
+               telegram_is_bot: false,
+               telegram_first_name: "Updated",
+               telegram_last_name: "Name",
+               telegram_language_code: "fr",
+               telegram_is_premium: false,
+               updated_at: _dt
+             } = attrs
+
+      %{}
+    end)
+
+    MockRepo
+    |> expect(:get_by, fn MockUser, clauses ->
+      assert clauses == [telegram_id: 12345]
+
+      %MockUser{
+        id: 456,
+        telegram_id: 12345,
+        telegram_username: "olduser",
+        telegram_is_bot: false,
+        telegram_first_name: "Old",
+        telegram_last_name: "User",
+        telegram_language_code: "en",
+        telegram_is_premium: true
       }
+    end)
+    |> expect(:update!, fn _changeset, opts ->
+      assert opts[:returning] == true
 
-      conn =
-        conn(:get, "/")
-        |> assign(:telegram_user_data, telegram_user_data)
-
-      opts = [
-        repo: MockRepo,
-        schema: MockUser,
-        changeset: :changeset
-      ]
-
-      expect(MockUser, :changeset, fn _user, attrs ->
-        assert %{
-                 telegram_id: 12345,
-                 telegram_username: "testuser",
-                 telegram_is_bot: false,
-                 telegram_first_name: "Test",
-                 telegram_last_name: "User",
-                 telegram_language_code: "en",
-                 telegram_is_premium: true,
-                 updated_at: _dt
-               } = attrs
-
-        %{}
-      end)
-
-      MockRepo
-      |> expect(:insert!, fn _changeset, opts ->
-        assert opts[:returning] == true
-        %{id: 123}
-      end)
-      |> expect(:transact, fn fun ->
-        transact_result = fun.()
-        assert transact_result == {:ok, %{id: 123}}
-        transact_result
-      end)
-
-      conn = UserDataPersistencePlug.call(conn, opts)
-
-      assert conn.assigns.current_user.id == 123
-    end
-
-    test "updates existing user when user exists" do
-      telegram_user_data = %{
-        "id" => 12345,
-        "username" => "updateduser",
-        "is_bot" => false,
-        "first_name" => "Updated",
-        "last_name" => "Name",
-        "language_code" => "fr",
-        "is_premium" => false
+      %MockUser{
+        id: 456,
+        telegram_id: 12345,
+        telegram_username: "updateduser",
+        telegram_is_bot: false,
+        telegram_first_name: "Updated",
+        telegram_last_name: "Name",
+        telegram_language_code: "fr",
+        telegram_is_premium: false
       }
+    end)
 
-      conn =
-        conn(:get, "/")
-        |> assign(:telegram_user_data, telegram_user_data)
+    result_conn = UserDataPersistencePlug.call(conn, opts)
 
-      opts = [
-        repo: MockRepo,
-        schema: MockUser,
-        changeset: :changeset
-      ]
+    assert result_conn.assigns.current_user.id == 456
+  end
 
-      expect(MockUser, :changeset, fn _user, attrs ->
-        assert %{
-                 telegram_id: 12345,
-                 telegram_username: "updateduser",
-                 telegram_is_bot: false,
-                 telegram_first_name: "Updated",
-                 telegram_last_name: "Name",
-                 telegram_language_code: "fr",
-                 telegram_is_premium: false,
-                 updated_at: _dt
-               } = attrs
+  test "stores telegram_last_message" do
+    telegram_user_data = %{
+      "id" => 12345,
+      "username" => "testuser",
+      "is_bot" => false,
+      "first_name" => "Test",
+      "last_message" => "Hello world"
+    }
 
-        %{}
-      end)
+    conn =
+      conn(:get, "/")
+      |> assign(:telegram_user_data, telegram_user_data)
 
-      MockRepo
-      |> expect(:get_by, fn MockUser, clauses ->
-        assert clauses == [telegram_id: 12345]
+    opts = [
+      repo: MockRepo,
+      schema: MockUser,
+      changeset: :changeset
+    ]
 
-        %MockUser{
-          id: 456,
-          telegram_id: 12345,
-          telegram_username: "olduser",
-          telegram_is_bot: false,
-          telegram_first_name: "Old",
-          telegram_last_name: "User",
-          telegram_language_code: "en",
-          telegram_is_premium: true
+    expect(MockUser, :changeset, fn _user, attrs ->
+      assert attrs.telegram_last_message == "Hello world"
+
+      %{}
+    end)
+
+    expect(MockRepo, :insert!, fn _changeset, _opts -> %{} end)
+
+    UserDataPersistencePlug.call(conn, opts)
+  end
+
+  test "doesn't reset telegram_last_message when user_data doesn't have it" do
+    telegram_user_data = %{
+      "id" => 12345,
+      "username" => "testuser",
+      "is_bot" => false,
+      "first_name" => "Test"
+    }
+
+    conn =
+      conn(:get, "/")
+      |> assign(:telegram_user_data, telegram_user_data)
+
+    opts = [
+      repo: MockRepo,
+      schema: MockUser,
+      changeset: :changeset
+    ]
+
+    expect(MockUser, :changeset, fn _user, attrs ->
+      refute Map.has_key?(attrs, :telegram_last_message)
+
+      %{}
+    end)
+
+    expect(MockRepo, :insert!, fn _changeset, _opts -> %{} end)
+
+    UserDataPersistencePlug.call(conn, opts)
+  end
+
+  test "uses custom user_assigns_key when provided" do
+    telegram_user_data = %{
+      "id" => 12345,
+      "username" => "testuser",
+      "is_bot" => false,
+      "first_name" => "Test"
+    }
+
+    conn =
+      conn(:get, "/")
+      |> assign(:telegram_user_data, telegram_user_data)
+
+    opts = [
+      repo: MockRepo,
+      schema: MockUser,
+      changeset: :changeset,
+      user_assigns_key: :my_custom_user
+    ]
+
+    expect(MockRepo, :insert!, fn _changeset, _opts -> %{id: 123} end)
+
+    result_conn = UserDataPersistencePlug.call(conn, opts)
+
+    assert result_conn.assigns.my_custom_user.id == 123
+    refute Map.has_key?(result_conn.assigns, :current_user)
+  end
+
+  test "current_user is assigned nil when user_data has no id" do
+    telegram_user_data = %{}
+
+    conn =
+      conn(:get, "/")
+      |> assign(:telegram_user_data, telegram_user_data)
+
+    opts = [
+      repo: MockRepo,
+      schema: MockUser,
+      changeset: :changeset
+    ]
+
+    conn = UserDataPersistencePlug.call(conn, opts)
+
+    refute conn.assigns.current_user
+  end
+
+  test "sets telegram_bot_blocked_at when user blocks bot" do
+    params = %{
+      "my_chat_member" => %{
+        "chat" => %{
+          "first_name" => "Max",
+          "id" => 2_144_377,
+          "last_name" => "Gorin",
+          "type" => "private",
+          "username" => "mxgrn"
+        },
+        "date" => 1_764_394_247,
+        "from" => %{
+          "first_name" => "Max",
+          "id" => 2_144_377,
+          "is_bot" => false,
+          "is_premium" => true,
+          "language_code" => "en",
+          "last_name" => "Gorin",
+          "username" => "mxgrn"
+        },
+        "new_chat_member" => %{
+          "status" => "kicked",
+          "until_date" => 0,
+          "user" => %{
+            "first_name" => "LC devbot",
+            "id" => 7_581_342_610,
+            "is_bot" => true,
+            "username" => "lc_devbot"
+          }
+        },
+        "old_chat_member" => %{
+          "status" => "member",
+          "user" => %{
+            "first_name" => "LC devbot",
+            "id" => 7_581_342_610,
+            "is_bot" => true,
+            "username" => "lc_devbot"
+          }
         }
-      end)
-      |> expect(:update!, fn _changeset, opts ->
-        assert opts[:returning] == true
+      },
+      "update_id" => 262_155_911
+    }
 
-        %MockUser{
-          id: 456,
-          telegram_id: 12345,
-          telegram_username: "updateduser",
-          telegram_is_bot: false,
-          telegram_first_name: "Updated",
-          telegram_last_name: "Name",
-          telegram_language_code: "fr",
-          telegram_is_premium: false
+    opts = [
+      repo: MockRepo,
+      schema: MockUser,
+      changeset: :changeset
+    ]
+
+    expect(MockUser, :changeset, fn _user, attrs ->
+      assert attrs.telegram_bot_blocked_at
+      %{}
+    end)
+
+    MockRepo
+    |> expect(:insert!, fn _changeset, opts ->
+      assert opts[:returning] == true
+      %{id: 123}
+    end)
+    |> expect(:transact, fn fun ->
+      transact_result = fun.()
+      assert transact_result == {:ok, %{id: 123}}
+      transact_result
+    end)
+
+    conn(:post, "/", params)
+    |> Gramex.UserDataPlug.call([])
+    |> UserDataPersistencePlug.call(opts)
+  end
+
+  test "sets telegram_bot_blocked_at to nil when user unblocks bot" do
+    params = %{
+      "my_chat_member" => %{
+        "chat" => %{
+          "first_name" => "Max",
+          "id" => 2_144_377,
+          "last_name" => "Gorin",
+          "type" => "private",
+          "username" => "mxgrn"
+        },
+        "date" => 1_764_395_955,
+        "from" => %{
+          "first_name" => "Max",
+          "id" => 2_144_377,
+          "is_bot" => false,
+          "is_premium" => true,
+          "language_code" => "en",
+          "last_name" => "Gorin",
+          "username" => "mxgrn"
+        },
+        "new_chat_member" => %{
+          "status" => "member",
+          "user" => %{
+            "first_name" => "LC devbot",
+            "id" => 7_581_342_610,
+            "is_bot" => true,
+            "username" => "lc_devbot"
+          }
+        },
+        "old_chat_member" => %{
+          "status" => "kicked",
+          "until_date" => 0,
+          "user" => %{
+            "first_name" => "LC devbot",
+            "id" => 7_581_342_610,
+            "is_bot" => true,
+            "username" => "lc_devbot"
+          }
         }
-      end)
+      },
+      "update_id" => 262_155_914
+    }
 
-      result_conn = UserDataPersistencePlug.call(conn, opts)
+    opts = [
+      repo: MockRepo,
+      schema: MockUser,
+      changeset: :changeset
+    ]
 
-      assert result_conn.assigns.current_user.id == 456
-    end
+    expect(MockUser, :changeset, fn _user, attrs ->
+      refute attrs.telegram_bot_blocked_at
+      %{}
+    end)
 
-    test "stores telegram_last_message" do
-      telegram_user_data = %{
-        "id" => 12345,
-        "username" => "testuser",
-        "is_bot" => false,
-        "first_name" => "Test",
-        "last_message" => "Hello world"
-      }
+    MockRepo
+    |> expect(:insert!, fn _changeset, opts ->
+      assert opts[:returning] == true
+      %{id: 123}
+    end)
+    |> expect(:transact, fn fun ->
+      transact_result = fun.()
+      assert transact_result == {:ok, %{id: 123}}
+      transact_result
+    end)
 
-      conn =
-        conn(:get, "/")
-        |> assign(:telegram_user_data, telegram_user_data)
-
-      opts = [
-        repo: MockRepo,
-        schema: MockUser,
-        changeset: :changeset
-      ]
-
-      expect(MockUser, :changeset, fn _user, attrs ->
-        assert attrs.telegram_last_message == "Hello world"
-
-        %{}
-      end)
-
-      expect(MockRepo, :insert!, fn _changeset, _opts -> %{} end)
-
-      UserDataPersistencePlug.call(conn, opts)
-    end
-
-    test "doesn't reset telegram_last_message when user_data doesn't have it" do
-      telegram_user_data = %{
-        "id" => 12345,
-        "username" => "testuser",
-        "is_bot" => false,
-        "first_name" => "Test"
-      }
-
-      conn =
-        conn(:get, "/")
-        |> assign(:telegram_user_data, telegram_user_data)
-
-      opts = [
-        repo: MockRepo,
-        schema: MockUser,
-        changeset: :changeset
-      ]
-
-      expect(MockUser, :changeset, fn _user, attrs ->
-        refute Map.has_key?(attrs, :telegram_last_message)
-
-        %{}
-      end)
-
-      expect(MockRepo, :insert!, fn _changeset, _opts -> %{} end)
-
-      UserDataPersistencePlug.call(conn, opts)
-    end
-
-    test "uses custom user_assigns_key when provided" do
-      telegram_user_data = %{
-        "id" => 12345,
-        "username" => "testuser",
-        "is_bot" => false,
-        "first_name" => "Test"
-      }
-
-      conn =
-        conn(:get, "/")
-        |> assign(:telegram_user_data, telegram_user_data)
-
-      opts = [
-        repo: MockRepo,
-        schema: MockUser,
-        changeset: :changeset,
-        user_assigns_key: :my_custom_user
-      ]
-
-      expect(MockRepo, :insert!, fn _changeset, _opts -> %{id: 123} end)
-
-      result_conn = UserDataPersistencePlug.call(conn, opts)
-
-      assert result_conn.assigns.my_custom_user.id == 123
-      refute Map.has_key?(result_conn.assigns, :current_user)
-    end
-
-    test "current_user is assigned nil when user_data has no id" do
-      telegram_user_data = %{}
-
-      conn =
-        conn(:get, "/")
-        |> assign(:telegram_user_data, telegram_user_data)
-
-      opts = [
-        repo: MockRepo,
-        schema: MockUser,
-        changeset: :changeset
-      ]
-
-      conn = UserDataPersistencePlug.call(conn, opts)
-
-      refute conn.assigns.current_user
-    end
+    conn(:post, "/", params)
+    |> Gramex.UserDataPlug.call([])
+    |> UserDataPersistencePlug.call(opts)
   end
 end

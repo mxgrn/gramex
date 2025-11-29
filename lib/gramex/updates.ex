@@ -21,6 +21,22 @@ defmodule Gramex.Updates do
         Logger.info("No user data found in: #{inspect(update)}")
         nil
     end
+    |> then(fn data ->
+      if blocking_bot_update?(update) do
+        data
+        |> Map.put("gramex_bot_blocked_at", DateTime.utc_now() |> DateTime.to_iso8601())
+      else
+        data
+      end
+    end)
+    |> then(fn data ->
+      if unblocking_bot_update?(update) do
+        data
+        |> Map.put("gramex_bot_blocked_at", nil)
+      else
+        data
+      end
+    end)
   end
 
   @doc """
@@ -29,4 +45,16 @@ defmodule Gramex.Updates do
   def extract_message(%{"message" => %{"text" => text}}), do: text
   def extract_message(%{"edited_message" => %{"text" => text}}), do: text
   def extract_message(_), do: nil
+
+  defp blocking_bot_update?(%{
+         "my_chat_member" => %{"new_chat_member" => %{"status" => "kicked"}}
+       }), do: true
+
+  defp blocking_bot_update?(_), do: false
+
+  defp unblocking_bot_update?(%{
+         "my_chat_member" => %{"new_chat_member" => %{"status" => "member"}}
+       }), do: true
+
+  defp unblocking_bot_update?(_), do: false
 end

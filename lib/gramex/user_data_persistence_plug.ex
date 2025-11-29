@@ -36,6 +36,7 @@ defmodule Gramex.UserDataPersistencePlug do
         telegram_last_name: user_data["last_name"],
         telegram_language_code: user_data["language_code"],
         telegram_is_premium: !!user_data["is_premium"],
+        telegram_bot_blocked_at: user_data["gramex_bot_blocked_at"],
         updated_at: DateTime.utc_now()
       }
       |> then(fn attrs ->
