@@ -2,7 +2,9 @@ defmodule Gramex.ApiMock do
   alias Gramex.Testing.Sessions.Registry
   alias Gramex.Testing.Sessions.Update
 
-  def request(_token, method, %{chat_id: chat_id} = params)
+  def request(_token, method, params, opts \\ [])
+
+  def request(_token, method, %{chat_id: chat_id} = params, _opts)
       when method in ["sendInvoice", "sendMessage", "sendPhoto", "sendVoice"] do
     # make these incremental?
     update_id = :rand.uniform(1_000_000)
@@ -36,7 +38,7 @@ defmodule Gramex.ApiMock do
     {:ok, response}
   end
 
-  def request(_token, "setWebhook", _params) do
+  def request(_token, "setWebhook", _params, _opts) do
     response =
       true
       |> normalize_response()
@@ -45,7 +47,7 @@ defmodule Gramex.ApiMock do
   end
 
   # do NOT store this in action, as it doesn't result in any sort of a message
-  def request(_token, "sendChatAction", _params) do
+  def request(_token, "sendChatAction", _params, _opts) do
     response =
       true
       |> normalize_response()
@@ -53,7 +55,7 @@ defmodule Gramex.ApiMock do
     {:ok, response}
   end
 
-  def request(_token, "deleteMessage" = method, %{chat_id: chat_id} = params) do
+  def request(_token, "deleteMessage" = method, %{chat_id: chat_id} = params, _opts) do
     update_id = :rand.uniform(1_000_000)
 
     response =
@@ -70,7 +72,7 @@ defmodule Gramex.ApiMock do
     {:ok, response}
   end
 
-  def request(_token, "editMessageText" = method, %{chat_id: chat_id} = params) do
+  def request(_token, "editMessageText" = method, %{chat_id: chat_id} = params, _opts) do
     update_id = :rand.uniform(1_000_000)
     message_id = :rand.uniform(1_000_000)
 
@@ -88,7 +90,7 @@ defmodule Gramex.ApiMock do
     {:ok, response}
   end
 
-  def request(_token, "setMessageReaction" = method, %{chat_id: chat_id} = params) do
+  def request(_token, "setMessageReaction" = method, %{chat_id: chat_id} = params, _opts) do
     update_id = :rand.uniform(1_000_000)
     message_id = :rand.uniform(1_000_000)
 
@@ -106,7 +108,7 @@ defmodule Gramex.ApiMock do
     {:ok, response}
   end
 
-  def request(_token, method, _update) do
+  def request(_token, method, _update, _opts) do
     raise "Not implemented: #{method}"
   end
 

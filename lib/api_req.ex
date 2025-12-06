@@ -7,12 +7,15 @@ defmodule Gramex.ApiReq do
   @doc """
   `method` is per the Telegram API documentation, e.g. "getMe" or :getMe.
   """
-  def request(token, method, params \\ %{}) do
+  def request(token, method, params \\ %{}, opts \\ []) do
+    opts = Keyword.validate!(opts, base_url: "https://api.telegram.org")
     Logger.info("Sending request to Telegram API: #{method} with params: #{inspect(params)}")
 
-    # Telegram supports both POST and GET, but Req provides retries for GET, e.g. for `{:error, %Req.TransportError{reason: :closed}}`, so, that's what we use.
-    "https://api.telegram.org/bot#{token}/#{method}"
-    |> Req.get(json: params)
+    opts[:base_url]
+    |> Kernel.<>("/bot#{token}/#{method}")
+    # Explicitely setting retry: :transient to retry on all requests (not just GET), e.g. for `{:error, %Req.TransportError{reason: :closed}}`, which is common with Telegram API.
+    # Previously, I've tried using GET, and it works when using a somewhat contraversial JSON body with GET requests. When trying to encode params in the URL for GET requests, it fails for payloads containing buttons, for example. So, we're sticking with POST and explicitely retrying on transient errors.
+    |> Req.post(json: params, retry: :transient)
     |> case do
       # When response contains result we need to check, we pass it along
       {:ok, %{body: %{"ok" => true, "result" => result}}} ->
