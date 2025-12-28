@@ -93,6 +93,34 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
     end
   end
 
+  def refute_text(session, pattern) do
+    case List.last(session.updates) do
+      nil ->
+        session
+
+      # TODO: this should look into response instead of params, but we're not building it properly yet
+      %{params: %{text: text}} ->
+        cond do
+          is_binary(pattern) and String.contains?(text, pattern) ->
+            raise "Expected message text not to contain '#{pattern}', but got: '#{text}'"
+            session
+
+          is_struct(pattern, Regex) and Regex.match?(pattern, text) ->
+            raise "Expected message text not to match '#{pattern}', but got: '#{text}'"
+            session
+
+          is_binary(pattern) ->
+            session
+
+          true ->
+            session
+        end
+
+      _update ->
+        session
+    end
+  end
+
   def assert_method(session, method) do
     case List.last(session.updates) do
       nil ->
