@@ -445,7 +445,7 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
 
     %{
       # random integer
-      "id" => :rand.uniform(1_000_000_000),
+      "update_id" => :rand.uniform(1_000_000_000),
       "callback_query" => %{
         "data" => opts[:data] || "some_data",
         "from" => opts[:from],
