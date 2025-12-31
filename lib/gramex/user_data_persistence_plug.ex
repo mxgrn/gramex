@@ -41,7 +41,7 @@ defmodule Gramex.UserDataPersistencePlug do
       }
       |> then(fn attrs ->
         # This is instead of passing nil in the map above, as we do NOT want to override telegram_last_message with nil
-        if Map.has_key?(user_data, "last_message") do
+        if is_map(user_data) && Map.has_key?(user_data, "last_message") do
           Map.put(attrs, :telegram_last_message, user_data["last_message"])
         else
           attrs
