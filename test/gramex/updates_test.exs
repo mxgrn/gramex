@@ -4,6 +4,44 @@ defmodule Gramex.UpdatesTest do
   alias Gramex.Updates
 
   describe "extract_user_data/1" do
+    test "extracts the 'from' field" do
+      update =
+        %{
+          "message" => %{
+            "chat" => %{
+              "first_name" => "Max",
+              "id" => 2_144_377,
+              "last_name" => "Gorin",
+              "type" => "private",
+              "username" => "mxgrn"
+            },
+            "date" => 1_767_757_663,
+            "from" => %{
+              "first_name" => "Max",
+              "id" => 2_144_377,
+              "is_bot" => false,
+              "is_premium" => true,
+              "language_code" => "ru",
+              "last_name" => "Gorin",
+              "username" => "mxgrn"
+            },
+            "message_id" => 69,
+            "text" => "hi"
+          },
+          "update_id" => 955_851_670
+        }
+
+      assert Updates.extract_user_data(update) == %{
+               "first_name" => "Max",
+               "id" => 2_144_377,
+               "is_bot" => false,
+               "is_premium" => true,
+               "language_code" => "ru",
+               "last_name" => "Gorin",
+               "username" => "mxgrn"
+             }
+    end
+
     test "doesn't crash for channel post" do
       update = %{
         "channel_post" => %{
