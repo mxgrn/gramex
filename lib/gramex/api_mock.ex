@@ -16,24 +16,20 @@ defmodule Gramex.ApiMock do
 
     response =
       build_response_by_method(method, params)
-      |> case do
-        %{} = resp ->
-          resp
-          |> Map.put(:chat, Map.from_struct(session.chat))
-          |> Map.put(:from, Map.from_struct(session.user))
-          |> Map.put(:message_id, message_id)
-          |> normalize_response()
+      |> Map.put(:chat, Map.from_struct(session.chat))
+      |> Map.put(:from, Map.from_struct(session.user))
+      |> Map.put(:message_id, message_id)
+      |> normalize_response()
 
-        other ->
-          other
-      end
-
-    Registry.append_to_session(chat_id, %Update{
-      method: method,
-      update_id: update_id,
-      params: params,
-      response: response
-    })
+    Registry.append_to_session(
+      chat_id,
+      %Update{
+        method: method,
+        update_id: update_id,
+        params: params,
+        response: response
+      }
+    )
 
     {:ok, response}
   end

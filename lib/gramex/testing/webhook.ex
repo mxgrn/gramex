@@ -6,7 +6,6 @@ defmodule Gramex.Testing.Webhook do
   def post_update(path, update) do
     build_conn()
     |> post(path, update)
-    # |> tap(fn conn -> conn.resp_body end)
     |> json_response(200)
   end
 end

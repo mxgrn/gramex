@@ -11,17 +11,36 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
   alias Gramex.Testing.Sessions.User
   alias Gramex.Testing.Webhook
 
-  def start_session(user_or_chat, opts \\ []) do
+  @doc """
+  Starts a chat session.
+  If the first argument is a User, a private chat with the bot is assumed.
+  If the first argument is a Chat, the :user option must be provided, which is then the sender to
+  the chat and is used to set the "from" parameter.
+  """
+  def start_session(user_or_chat, opts \\ [])
+
+  def start_session(%User{} = user, opts) do
     opts =
       NimbleOptions.validate!(opts,
-        user: [type: {:struct, User}],
         chat: [type: {:struct, Chat}],
         webhook_path: [type: :string, default: "/telegram"],
-        # should we allow this?
+        # should we allow this option?
         updates: [type: {:list, {:struct, Update}}, default: []]
       )
 
-    Registry.add_session(user_or_chat, opts)
+    Registry.add_session(user, opts)
+  end
+
+  def start_session(%Chat{} = chat, opts) do
+    opts =
+      NimbleOptions.validate!(opts,
+        user: [type: {:struct, User}, required: true],
+        webhook_path: [type: :string, default: "/telegram"],
+        # should we allow this option?
+        updates: [type: {:list, {:struct, Update}}, default: []]
+      )
+
+    Registry.add_session(chat, opts)
   end
 
   def reload_session(%{chat: %{id: chat_id}}) do
