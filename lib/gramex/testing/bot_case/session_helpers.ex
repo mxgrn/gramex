@@ -331,6 +331,8 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
     %{"message" => message, "update_id" => :rand.uniform(1_000_000_000)}
   end
 
+  def build_object(object, opts \\ [])
+
   def build_object(:successful_payment, opts) do
     %{
       "currency" => "XTR",
