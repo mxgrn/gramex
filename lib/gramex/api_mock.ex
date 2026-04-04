@@ -1,10 +1,11 @@
 defmodule Gramex.ApiMock do
   alias Gramex.Testing.Sessions.Registry
   alias Gramex.Testing.Sessions.Update
+  alias Gramex.Testing.Sessions.User
 
   def request(_token, method, params, opts \\ [])
 
-  def request(_token, method, %{chat_id: chat_id} = params, _opts)
+  def request(token, method, %{chat_id: chat_id} = params, _opts)
       when method in ["sendInvoice", "sendMessage", "sendPhoto", "sendVoice"] do
     # make these incremental?
     update_id = :rand.uniform(1_000_000)
@@ -14,10 +15,18 @@ defmodule Gramex.ApiMock do
       Registry.get_session(chat_id) ||
         raise "No session for chat_id #{chat_id}. Did you start one?"
 
+    if is_nil(session.user),
+      do:
+        raise(
+          "You need to pass :user option when creating a session if you want to test sending a message"
+        )
+
+    from = get_bot_by_token(token)
+
     response =
       build_response_by_method(method, params)
       |> Map.put(:chat, Map.from_struct(session.chat))
-      |> Map.put(:from, Map.from_struct(session.user))
+      |> Map.put(:from, Map.from_struct(from))
       |> Map.put(:message_id, message_id)
       |> normalize_response()
 
@@ -42,7 +51,7 @@ defmodule Gramex.ApiMock do
     {:ok, response}
   end
 
-  # do NOT store this in action, as it doesn't result in any sort of a message
+  # do NOT store this in session, as it doesn't result in any sort of a message
   def request(_token, "sendChatAction", _params, _opts) do
     response =
       true
@@ -154,5 +163,10 @@ defmodule Gramex.ApiMock do
 
   defp build_response_by_method("setMessageReaction", _params) do
     true
+  end
+
+  # In the future, to support multiple bots per application, we would need to register bots in test setup; this method would get them by token from the registry. For now, tests support a single bot per application.
+  defp get_bot_by_token(_token) do
+    User.new(first_name: "Test Bot", is_bot: true, username: "testbot")
   end
 end
