@@ -14,8 +14,8 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
   @doc """
   Starts a chat session.
   If the first argument is a User, a private chat with the bot is assumed.
-  If the first argument is a Chat, the :user option must be provided, which is then the sender to
-  the chat and is used to set the "from" parameter.
+  If the first argument is a Chat, a :user option can be provided, which is then the sender to the
+  chat and is used to set the "from" parameter.
   """
   def start_session(user_or_chat, opts \\ [])
 
@@ -34,7 +34,7 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
   def start_session(%Chat{} = chat, opts) do
     opts =
       NimbleOptions.validate!(opts,
-        user: [type: {:struct, User}, required: true],
+        user: [type: {:struct, User}],
         webhook_path: [type: :string, default: "/telegram"],
         # should we allow this option?
         updates: [type: {:list, {:struct, Update}}, default: []]
@@ -65,6 +65,42 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
 
   def send_message_reaction(session, reaction, opts \\ []) do
     send_update(session, :message_reaction, Keyword.put(opts, :emoji, reaction))
+  end
+
+  @doc """
+  Simulates the bot being added to the group chat.
+  Sends a `my_chat_member` update with status changing from "left" to "member".
+  """
+
+  def add_bot_to_group(%{chat: %{type: "private"}}, _bot) do
+    raise ArgumentError, "Cannot add bot to private chats"
+  end
+
+  def add_bot_to_group(session, bot) do
+    Webhook.post_update(
+      session.webhook_path,
+      build_my_chat_member_update(session, bot, old_status: "left", new_status: "member")
+    )
+
+    Registry.get_session(session.chat.id)
+  end
+
+  @doc """
+  Simulates the bot being removed from the group chat.
+  Sends a `my_chat_member` update with status changing from "member" to "kicked".
+  """
+
+  def remove_bot_from_group(%{chat: %{type: "private"}}, _bot) do
+    raise ArgumentError, "Cannot remove bot from private chats"
+  end
+
+  def remove_bot_from_group(session, bot) do
+    Webhook.post_update(
+      session.webhook_path,
+      build_my_chat_member_update(session, bot, old_status: "member", new_status: "kicked")
+    )
+
+    Registry.get_session(session.chat.id)
   end
 
   def send_update(session, method, opts) do
@@ -295,6 +331,29 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
       else
         reraise e, __STACKTRACE__
       end
+  end
+
+  defp build_my_chat_member_update(session, %User{} = bot, opts) do
+    bot_map = Map.from_struct(bot)
+    from = Map.from_struct(session.user)
+    chat = Map.from_struct(session.chat)
+
+    %{
+      "update_id" => :rand.uniform(1_000_000_000),
+      "my_chat_member" => %{
+        "chat" => chat |> Gramex.Utils.deep_stringify_keys(),
+        "date" => DateTime.utc_now() |> DateTime.to_unix(),
+        "from" => from |> Gramex.Utils.deep_stringify_keys(),
+        "new_chat_member" => %{
+          "status" => opts[:new_status],
+          "user" => bot_map |> Gramex.Utils.deep_stringify_keys()
+        },
+        "old_chat_member" => %{
+          "status" => opts[:old_status],
+          "user" => bot_map |> Gramex.Utils.deep_stringify_keys()
+        }
+      }
+    }
   end
 
   defp find_update_with_button([], _text) do
