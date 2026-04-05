@@ -15,12 +15,6 @@ defmodule Gramex.ApiMock do
       Registry.get_session(chat_id) ||
         raise "No session for chat_id #{chat_id}. Did you start one?"
 
-    if is_nil(session.user),
-      do:
-        raise(
-          "You need to pass :user option when creating a session if you want to test sending a message"
-        )
-
     from = get_bot_by_token(token)
 
     response =

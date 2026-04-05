@@ -2,6 +2,7 @@ defmodule Gramex.Testing.SessionTest do
   use Gramex.Case
 
   alias Gramex.Api
+  alias Gramex.Testing.Sessions.Chat
   alias Gramex.Testing.Sessions.User
   alias Gramex.Testing.Webhook
 
@@ -20,6 +21,16 @@ defmodule Gramex.Testing.SessionTest do
       end)
 
       Api.request(nil, "sendMessage", %{chat_id: @chat_id, text: "Hello"})
+    end
+
+    test "raises if there's no user (actor) assigned to a chat session" do
+      chat = Chat.new()
+      session = start_session(chat)
+
+      assert_raise RuntimeError, ~r/You need to pass :user/, fn ->
+        session
+        |> send_message("Hello")
+      end
     end
   end
 

@@ -104,6 +104,10 @@ defmodule Gramex.Testing.BotCase.SessionHelpers do
   end
 
   def send_update(session, method, opts) do
+    if is_nil(session.user) do
+      raise("You need to pass :user option when creating session if you want to send #{method}")
+    end
+
     Webhook.post_update(
       session.webhook_path,
       build_telegram_update_for_method(
