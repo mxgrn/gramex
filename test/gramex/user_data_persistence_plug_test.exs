@@ -12,7 +12,7 @@ defmodule Gramex.UserDataPersistencePlugTest do
   alias Gramex.MockUser
   alias Gramex.UserDataPersistencePlug
 
-  setup :set_mimic_global
+  setup :set_mimic_private
   setup :verify_on_exit!
 
   test "creates new user when user doesn't exist" do

@@ -7,6 +7,8 @@ defmodule Gramex.Case do
     quote do
       import Gramex.Testing.BotCase.SessionHelpers
       import Mimic
+
+      setup :set_mimic_from_context
     end
   end
 
