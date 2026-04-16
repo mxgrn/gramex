@@ -117,6 +117,14 @@ Because the helpers post through `Phoenix.ConnTest`, your application pipeline (
 - Format the codebase with `mix format`.
 - Generate HTML documentation with `mix docs` (sets `source_ref` based on the version in `mix.exs`).
 
+## User schema and migration
+
+Basic Ecto schema:
+
+```bash
+mix phx.gen.schema Users.User users telegram_id:integer telegram_username:text telegram_is_bot:boolean telegram_first_name:text telegram_last_name:text telegram_language_code telegram_is_premium:boolean telegram_last_message:text
+```
+
 ## License
 
 Gramex is released under the MIT License.
