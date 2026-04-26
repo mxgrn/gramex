@@ -8,11 +8,51 @@ defmodule Gramex.UserDataPersistencePlug do
   plug Gramex.UserDataPlug
   plug Gramex.UserDataPersistencePlug, repo: MyApp.Repo, schema: MyApp.User, changeset: :changeset
   ```
+
+  ## Options
+
+  - `:repo` (required) — the Ecto repo module
+  - `:schema` (required) — the Ecto schema module
+  - `:changeset` — changeset function name on the schema (default: `:changeset`)
+  - `:user_assigns_key` — key to assign the persisted user in `conn.assigns` (default: `:current_user`)
+  - `:field_mapping` — a map overriding how Telegram fields map to database columns.
+    Only the keys you provide are overridden; the rest keep their defaults:
+
+        %{
+          id: :telegram_id,
+          username: :telegram_username,
+          is_bot: :telegram_is_bot,
+          first_name: :telegram_first_name,
+          last_name: :telegram_last_name,
+          language_code: :telegram_language_code,
+          is_premium: :telegram_is_premium,
+          bot_blocked_at: :telegram_bot_blocked_at,
+          last_message: :telegram_last_message
+        }
+
+    Example — drop the `telegram_` prefix for name fields:
+
+        plug Gramex.UserDataPersistencePlug,
+          repo: MyApp.Repo,
+          schema: MyApp.User,
+          field_mapping: %{first_name: :first_name, last_name: :last_name}
   """
 
   @behaviour Plug
 
   require Logger
+
+  @default_field_mapping %{
+    id: :telegram_id,
+    username: :telegram_username,
+    is_bot: :telegram_is_bot,
+    first_name: :telegram_first_name,
+    last_name: :telegram_last_name,
+    language_code: :telegram_language_code,
+    is_premium: :telegram_is_premium,
+    bot_blocked_at: :telegram_bot_blocked_at,
+    last_message: :telegram_last_message
+  }
 
   @impl Plug
   def init(opts), do: opts
@@ -23,26 +63,25 @@ defmodule Gramex.UserDataPersistencePlug do
     schema = opts[:schema] || raise("schema is required")
     changeset = Keyword.get(opts, :changeset, :changeset)
     user_assigns_key = Keyword.get(opts, :user_assigns_key, :current_user)
-    # ... in the future also: field mapping, etc.
+    mapped = Map.merge(@default_field_mapping, Keyword.get(opts, :field_mapping, %{}))
 
     user_data = conn.assigns.telegram_user_data
 
     user_attrs =
       %{
-        telegram_id: user_data["id"],
-        telegram_username: user_data["username"],
-        telegram_is_bot: user_data["is_bot"],
-        telegram_first_name: user_data["first_name"],
-        telegram_last_name: user_data["last_name"],
-        telegram_language_code: user_data["language_code"],
-        telegram_is_premium: !!user_data["is_premium"],
-        telegram_bot_blocked_at: user_data["gramex_bot_blocked_at"],
+        mapped.id => user_data["id"],
+        mapped.username => user_data["username"],
+        mapped.is_bot => user_data["is_bot"],
+        mapped.first_name => user_data["first_name"],
+        mapped.last_name => user_data["last_name"],
+        mapped.language_code => user_data["language_code"],
+        mapped.is_premium => !!user_data["is_premium"],
+        mapped.bot_blocked_at => user_data["gramex_bot_blocked_at"],
         updated_at: DateTime.utc_now()
       }
       |> then(fn attrs ->
-        # This is instead of passing nil in the map above, as we do NOT want to override telegram_last_message with nil
         if is_map(user_data) && Map.has_key?(user_data, "last_message") do
-          Map.put(attrs, :telegram_last_message, user_data["last_message"])
+          Map.put(attrs, mapped.last_message, user_data["last_message"])
         else
           attrs
         end
@@ -50,7 +89,7 @@ defmodule Gramex.UserDataPersistencePlug do
 
     if user_data["id"] do
       repo.transact(fn ->
-        case repo.get_by(schema, telegram_id: user_data["id"]) do
+        case repo.get_by(schema, [{mapped.id, user_data["id"]}]) do
           nil ->
             apply(schema, changeset, [struct(schema), user_attrs])
             |> repo.insert!(returning: true)
@@ -62,6 +101,7 @@ defmodule Gramex.UserDataPersistencePlug do
         |> then(&{:ok, &1})
       end)
     else
+      Logger.warning("Telegram user data missing 'id' field: #{inspect(user_data)}")
       {:error, :no_telegram_id}
     end
     |> case do

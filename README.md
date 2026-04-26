@@ -2,7 +2,7 @@
 
 Telegram bot helpers for Elixir applications using Plug or Phoenix. Gramex wraps the Telegram Bot API, extracts user data from webhook payloads, keeps your database in sync, and ships a lightweight testing toolkit so you can exercise your bots end-to-end.
 
-> ℹ️ Gramex is under active development. The public API is still evolving, but it is already useful for real Telegram bot projects.
+> ℹ️ Gramex is under active development. The public API is still evolving, but it is already being used in production.
 
 ## Features
 - **Adapter-based API client** – `Gramex.Api` delegates requests to a configurable adapter (default: `Gramex.ApiReq`) and normalises common Telegram error cases; the `Gramex.ApiMock` adapter can be set in test environments to enable integration testing without hitting Telegram.

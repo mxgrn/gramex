@@ -224,6 +224,51 @@ defmodule Gramex.UserDataPersistencePlugTest do
     refute Map.has_key?(result_conn.assigns, :current_user)
   end
 
+  test "uses custom field_mapping when provided" do
+    telegram_user_data = %{
+      "id" => 12345,
+      "username" => "testuser",
+      "is_bot" => false,
+      "first_name" => "Test",
+      "last_name" => "User",
+      "language_code" => "en",
+      "is_premium" => true,
+      "last_message" => "Hello"
+    }
+
+    conn =
+      conn(:get, "/")
+      |> assign(:telegram_user_data, telegram_user_data)
+
+    opts = [
+      repo: MockRepo,
+      schema: MockUser,
+      changeset: :changeset,
+      field_mapping: %{
+        first_name: :first_name,
+        last_name: :last_name,
+        last_message: :last_message
+      }
+    ]
+
+    expect(MockUser, :changeset, fn _user, attrs ->
+      assert attrs.first_name == "Test"
+      assert attrs.last_name == "User"
+      assert attrs.last_message == "Hello"
+      assert attrs.telegram_id == 12345
+      assert attrs.telegram_username == "testuser"
+      refute Map.has_key?(attrs, :telegram_first_name)
+      refute Map.has_key?(attrs, :telegram_last_name)
+      refute Map.has_key?(attrs, :telegram_last_message)
+
+      %{}
+    end)
+
+    expect(MockRepo, :insert!, fn _changeset, _opts -> %{id: 123} end)
+
+    UserDataPersistencePlug.call(conn, opts)
+  end
+
   test "current_user is assigned nil when user_data has no id" do
     telegram_user_data = %{}
 
